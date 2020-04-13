@@ -206,4 +206,6 @@ WHITESPACE = _ { " "
                | NEWLINE
                }
 
-COMMENT = _ { "#" ~ (!NEWLINE ~ ANY)* ~ NEWLINE? }
+COMMENT = _ { "#" ~ (!NEWLINE ~ ANY)* ~ NEWLINE?
+            | "@" ~ (!NEWLINE ~ ANY)* ~ NEWLINE?
+            }
