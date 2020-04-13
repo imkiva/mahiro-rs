@@ -37,7 +37,7 @@ primary_stmt = { throw_stmt
 expr_stmt = { primary_prefix ~ primary_postfix+
             | inc_dec ~ expr
             }
-assign_stmt = { expr ~ assign_op ~ expr }
+assign_stmt = { expr ~ (assign_op ~ expr)+ }
 assign_op = { "=" | "+=" | "-=" | "*=" | "/=" | "%=" | "^=" }
 
 // var
