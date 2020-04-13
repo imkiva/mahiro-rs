@@ -38,7 +38,7 @@ assign_stmt = { expr ~ assign_op ~ expr }
 assign_op = { "=" | "+=" | "-=" | "*=" | "/=" | "%=" | "^=" }
 
 // var
-var_kw = { "var" | "const" }
+var_kw = { "var" | "constant" | "const" }
 var_decl = { var_kw ~ var_init ~ ("," ~ var_init)* }
 var_init = { id ~ "=" ~ expr }
 
@@ -174,7 +174,7 @@ number_bin = _ { ("+" | "-")? ~ "0b" ~ ASCII_BIN_DIGIT+ }
 
 string_lit = $ { "\"" ~ (escape | (!("\\" | "\"") ~ ANY)+)* ~ "\""}
 
-char_lit = { "'" ~ (!("'") ~ (escape | ANY)) ~ "'" }
+char_lit = { "'" ~ (!("'") ~ (escape | ASCII)) ~ "'" }
 
 array_lit = { "{" ~ args? ~ "}" }
 
@@ -210,5 +210,5 @@ WHITESPACE = _ { " "
                }
 
 COMMENT = _ { "#" ~ (!NEWLINE ~ ANY)* ~ NEWLINE?
-            | "@" ~ (!NEWLINE ~ ANY)* ~ NEWLINE?
+            | "@charset" ~ (!NEWLINE ~ ANY)+ ~ NEWLINE?
             }
