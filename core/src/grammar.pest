@@ -68,8 +68,8 @@ if_stmt = { "if" ~ expr ~ common_body ~ ("else" ~ common_body)? ~ "end" }
 
 // switch
 switch_stmt = { "switch" ~ expr ~ switch_case* ~ "end" }
-switch_case = { "default" ~ ("end" | common_body ~ "end")
-              | "case" ~ expr ~ ("end" | common_body ~ "end")
+switch_case = { "default" ~ SEMI? ~ ("end" | common_body ~ "end")
+              | "case" ~ expr ~ SEMI? ~ ("end" | common_body ~ "end")
               }
 
 // while
