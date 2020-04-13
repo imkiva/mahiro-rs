@@ -100,7 +100,9 @@ block_stmt = { "block" ~ common_body ~ "end" }
 // expr
 expr = { ternary_expr }
 
-ternary_expr = { logic_or_expr ~ ("?" ~ expr ~ ":" ~ expr)? }
+// we must ensure that the expr after "?" should be:
+// [primary_prefix, mapping]
+ternary_expr = { logic_or_expr ~ ("?" ~ expr)? }
 
 // level 6
 logic_or_expr = { logic_and_expr ~ (or ~ logic_and_expr)* }
