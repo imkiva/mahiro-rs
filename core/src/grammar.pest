@@ -43,9 +43,7 @@ var_decl = { var_kw ~ var_init ~ ("," ~ var_init)* }
 var_init = { id ~ "=" ~ expr }
 
 // func
-func_decl = { "function" ~ id ~ func_params ~ "override"? ~ common_body ~ "end" }
-func_params = { "(" ~ (params ~ ("," ~ varargs_param)?)? ~ ")" }
-varargs_param = { "..." ~ id }
+func_decl = { "function" ~ id ~ callable_params ~ "override"? ~ common_body ~ "end" }
 
 // namespace
 namespace_decl = { "namespace" ~ id ~ common_body ~ "end" }
@@ -154,7 +152,7 @@ assign = { assign_op ~ expr }
 assign_op = { "=" | "+=" | "-=" | "*=" | "/=" | "%=" | "^=" }
 flatten = { "..." }
 
-lambda = { "[]" ~ "(" ~ params ~ ")" ~ "->" ~ expr }
+lambda = { "[]" ~ callable_params ~ "->" ~ expr }
 
 literal = { number_lit
           | bool_lit
@@ -207,8 +205,10 @@ escape = _{ "\\\\"
           }
 
 params = { id ~ ("," ~ id)* }
+varargs_param = { "..." ~ id }
 mod_name = { id ~ ("." ~ id)* }
 args = { expr ~ ("," ~ expr)* }
+callable_params = { "(" ~ params? ~ (","? ~ varargs_param)? ~ ")" }
 
 UNDERLINE = _ { "_" }
 
