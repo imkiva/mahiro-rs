@@ -40,7 +40,9 @@ expr_stmt = { primary_prefix ~ primary_postfix+
 // var
 var_kw = { "var" | "constant" | "const" }
 var_decl = { var_kw ~ var_init ~ ("," ~ var_init)* }
-var_init = { id ~ "=" ~ expr }
+var_init = { id ~ "=" ~ expr
+           | "(" ~ params ~ ")" ~ "=" ~ expr
+           }
 
 // func
 func_decl = { "function" ~ id ~ callable_params ~ "override"? ~ common_body ~ "end" }
