@@ -130,7 +130,7 @@ inc_dec = { "++" | "--" }
 not = { "not" | "!" }
 
 primary_expr = { primary_prefix ~ primary_postfix* }
-primary_prefix = { "(" ~ expr ~ ")"
+primary_prefix = { "(" ~ expr ~ ("," ~ expr)* ~ ")"
                  | literal
                  | lambda
                  | id
