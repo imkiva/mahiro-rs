@@ -9,9 +9,7 @@ program = { SOI ~ (WHITESPACE | COMMENT | header | stmt)* ~ EOI }
 header = { using_decl | import_decl | package_decl }
 
 using_decl = { "using" ~ mod_name }
-import_decl = { "import" ~ mod_name ~ ("as" ~ id)?
-              | "import" ~ mod_name ~ ("," ~ mod_name)*
-              }
+import_decl = { "import" ~ mod_name ~ ("as" ~ id)? }
 package_decl = { "package" ~ id }
 
 // statement
