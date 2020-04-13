@@ -29,10 +29,13 @@ primary_stmt = { throw_stmt
                | for_each_stmt
                | loop_until_stmt
                | try_stmt
+               | assign_stmt
                | expr_stmt
                }
 
 expr_stmt = { primary_prefix ~ primary_postfix+ }
+assign_stmt = { expr ~ assign_op ~ expr }
+assign_op = { "=" | "+=" | "-=" | "*=" | "/=" | "%=" | "^=" }
 
 // var
 var_kw = { "var" | "const" }
