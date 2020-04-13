@@ -28,6 +28,7 @@ primary_stmt = { throw_stmt
                | for_stmt
                | for_each_stmt
                | loop_until_stmt
+               | loop_control
                | try_stmt
                | assign_stmt
                | expr_stmt
@@ -82,6 +83,9 @@ while_stmt = { "while" ~ expr ~ common_body ~ "end" }
 // loop
 loop_until_stmt = { "loop" ~ common_body ~ loop_until_end }
 loop_until_end = { "until" ~ expr | "end" }
+
+// break/continue
+loop_control = { "break" | "continue" }
 
 // for
 for_stmt = { "for" ~ id ~ for_header ~ for_body }
