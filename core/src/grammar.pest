@@ -83,7 +83,7 @@ loop_until_end = { "until" ~ expr | "end" }
 // for
 for_stmt = { "for" ~ id ~ for_header ~ for_body ~ "end" }
 for_each_stmt = { "foreach" ~ id ~ for_each_header ~ for_body ~ "end" }
-for_header = { "=" ~ expr ~ "," ~ expr ~ expr }
+for_header = { "=" ~ expr ~ "," ~ expr ~ "," ~ expr }
 for_each_header = { "in" ~ expr }
 for_body = { "do" ~ expr | common_body }
 
@@ -121,7 +121,7 @@ pow_op = { "^" | "%" }
 unary_expr = { unary_op ~ expr
              | primary_expr ~ inc_dec?
              }
-unary_op = { not | add_op | inc_dec | "typeid" | "new" | "gcnew" }
+unary_op = { inc_dec | not | add_op | "typeid" | "new" | "gcnew" }
 inc_dec = { "++" | "--" }
 not = { "not" | "!" }
 
