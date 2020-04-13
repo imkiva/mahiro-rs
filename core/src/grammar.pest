@@ -30,15 +30,12 @@ primary_stmt = { throw_stmt
                | loop_until_stmt
                | loop_control
                | try_stmt
-               | assign_stmt
                | expr_stmt
                }
 
 expr_stmt = { primary_prefix ~ primary_postfix+
             | inc_dec ~ expr
             }
-assign_stmt = { expr ~ (assign_op ~ expr)+ }
-assign_op = { "=" | "+=" | "-=" | "*=" | "/=" | "%=" | "^=" }
 
 // var
 var_kw = { "var" | "constant" | "const" }
@@ -144,6 +141,7 @@ primary_postfix = { apply
                   | index_access
                   | member_access
                   | mapping
+                  | assign
                   | flatten
                   }
 
@@ -152,6 +150,8 @@ index_access = { "[" ~ expr ~ "]" }
 member_access = { member_access_op ~ id }
 member_access_op = { "." | "->" }
 mapping = { ":" ~ expr }
+assign = { assign_op ~ expr }
+assign_op = { "=" | "+=" | "-=" | "*=" | "/=" | "%=" | "^=" }
 flatten = { "..." }
 
 lambda = { "[]" ~ "(" ~ params ~ ")" ~ "->" ~ expr }
