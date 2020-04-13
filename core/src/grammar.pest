@@ -79,7 +79,7 @@ loop_until_stmt = { "loop" ~ common_body ~ loop_until_end }
 loop_until_end = { "until" ~ expr | "end" }
 
 // for
-for_stmt = { "for" ~ id ~ for_header ~ for_body ~ "end" }
+for_stmt = { "for" ~ id ~ for_header ~ for_body }
 for_each_stmt = { "foreach" ~ id ~ for_each_header ~ for_body }
 for_header = { "=" ~ expr ~ "," ~ expr ~ "," ~ expr }
 for_each_header = { "in" ~ expr }
