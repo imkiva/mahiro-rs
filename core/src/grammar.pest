@@ -179,7 +179,7 @@ number_float = _ { number_dec ~ "." ~ number_dec }
 
 string_lit = $ { "\"" ~ (escape | (!("\\" | "\"") ~ ANY)+)* ~ "\""}
 
-char_lit = { "'" ~ (!("'") ~ (escape | ASCII)) ~ "'" }
+char_lit = $ { "\'" ~ (escape | (!("\\" | "\'") ~ ANY)+) ~ "\'"}
 
 array_lit = { "{" ~ args? ~ "}" }
 
