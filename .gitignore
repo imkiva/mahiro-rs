@@ -36,5 +36,3 @@
 .idea/
 cmake-*
 
-script/target
-script_repl/target
