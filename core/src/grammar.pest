@@ -1,0 +1,211 @@
+//
+// Created by intellij-pest on 2020-04-13
+// grammar
+// Author: kiva
+//
+
+program = { SOI ~ (WHITESPACE | COMMENT | header | stmt)* ~ EOI }
+
+header = { using_decl | import_decl | package_decl }
+
+using_decl = { "using" ~ mod_name }
+import_decl = { "import" ~ mod_name ~ ("as" ~ id)?
+              | "import" ~ mod_name ~ ("," ~ mod_name)*
+              }
+package_decl = { "package" ~ id }
+
+// statement
+stmt = { primary_stmt ~ SEMI? | cross_line_stmt }
+cross_line_stmt = { "@begin" ~ stmt ~ "@end"}
+primary_stmt = { throw_stmt
+               | return_stmt
+               | var_decl
+               | func_decl
+               | struct_decl
+               | namespace_decl
+               | if_stmt
+               | while_stmt
+               | switch_stmt
+               | block_stmt
+               | for_stmt
+               | for_each_stmt
+               | loop_until_stmt
+               | try_stmt
+               | expr_stmt
+               }
+
+expr_stmt = { primary_prefix ~ primary_postfix+ }
+
+// var
+var_kw = { "var" | "const" }
+var_decl = { var_kw ~ var_init ~ ("," ~ var_init)* }
+var_init = { id ~ "=" ~ expr }
+
+// func
+func_decl = { "function" ~ id ~ func_params ~ "override"? ~ common_body ~ "end" }
+func_params = { "(" ~ (params ~ ("," ~ varargs_param)?)? ~ ")" }
+varargs_param = { "..." ~ id }
+
+// namespace
+namespace_decl = { "namespace" ~ id ~ common_body ~ "end" }
+
+// struct
+struct_kw = { "struct" | "class" }
+struct_decl = { struct_kw ~ id ~ ("extends" ~ expr)? ~ struct_item* ~ "end" }
+struct_item = { var_decl | func_decl }
+
+common_body = { stmt* }
+
+// return
+return_stmt = { "return" ~ expr? }
+// throw
+throw_stmt = { "throw" ~ expr }
+
+// try
+try_stmt = { "try" ~ common_body ~ "catch" ~ id ~ common_body ~ "end" }
+
+// if
+if_stmt = { "if" ~ expr ~ common_body ~ ("else" ~ common_body)? ~ "end" }
+
+// switch
+switch_stmt = { "switch" ~ expr ~ switch_case* ~ "end" }
+switch_case = { "default" ~ ("end" | common_body ~ "end")
+              | "case" ~ expr ~ ("end" | common_body ~ "end")
+              }
+
+// while
+while_stmt = { "while" ~ expr ~ common_body ~ "end" }
+
+// loop
+loop_until_stmt = { "loop" ~ common_body ~ loop_until_end }
+loop_until_end = { "until" ~ expr | "end" }
+
+// for
+for_stmt = { "for" ~ id ~ for_header ~ for_body ~ "end" }
+for_each_stmt = { "foreach" ~ id ~ for_each_header ~ for_body ~ "end" }
+for_header = { "=" ~ expr ~ "," ~ expr ~ expr }
+for_each_header = { "in" ~ expr }
+for_body = { "do" ~ expr | common_body }
+
+// block
+block_stmt = { "block" ~ common_body ~ "end" }
+
+// expr
+expr = { ternary_expr }
+
+ternary_expr = { logic_or_expr ~ ("?" ~ expr ~ ":" ~ expr)? }
+
+// level 6
+logic_or_expr = { logic_and_expr ~ (or ~ logic_and_expr)* }
+// level 7
+logic_and_expr = { relation_expr ~ (and ~ relation_expr)* }
+and = { "and" | "&&" }
+or = { "or" | "||" }
+
+// level 9
+relation_expr = { add_expr ~ (relation_op ~ add_expr)* }
+relation_op = { ">=" | "<=" | "==" | "!=" | "<" | ">" }
+
+// level 10
+add_expr = { mul_expr ~ (add_op ~ mul_expr)* }
+add_op = { "+" | "-" }
+
+// level 11
+mul_expr = { pow_expr ~ (mul_op ~ pow_expr)* }
+mul_op = { "*" | "/" }
+
+// level 12
+pow_expr = { unary_expr ~ (pow_op ~ unary_expr)* }
+pow_op = { "^" | "%" }
+
+unary_expr = { unary_op ~ expr
+             | primary_expr ~ inc_dec?
+             }
+unary_op = { not | add_op | inc_dec | "typeid" | "new" | "gcnew" }
+inc_dec = { "++" | "--" }
+not = { "not" | "!" }
+
+primary_expr = { primary_prefix ~ primary_postfix* }
+primary_prefix = { "(" ~ expr ~ ")"
+                 | literal
+                 | lambda
+                 | id
+                 }
+primary_postfix = { apply
+                  | index_access
+                  | member_access
+                  | mapping
+                  | flatten
+                  }
+
+apply = { "(" ~ args? ~ ")" }
+index_access = { "[" ~ expr ~ "]" }
+member_access = { member_access_op ~ id }
+member_access_op = { "." | "->" }
+mapping = { ":" ~ expr }
+flatten = { "..." }
+
+lambda = { "[]" ~ "(" ~ params ~ ")" ~ "->" ~ expr }
+
+literal = { number_lit
+          | bool_lit
+          | null_lit
+          | string_lit
+          | char_lit
+          | array_lit
+          }
+
+null_lit = { "null" }
+
+number_lit = $ { number_hex
+               | number_oct
+               | number_bin
+               | number_dec
+               }
+
+number_dec = _ { ("+" | "-")? ~ ASCII_DIGIT+ }
+
+number_oct = _ { ("+" | "-")? ~ "0o" ~ ASCII_OCT_DIGIT+ }
+
+number_hex = _ { ("+" | "-")? ~ "0x" ~ ASCII_HEX_DIGIT+ }
+
+number_bin = _ { ("+" | "-")? ~ "0b" ~ ASCII_BIN_DIGIT+ }
+
+string_lit = $ { "\"" ~ (escape | (!("\\" | "\"") ~ ANY)+)* ~ "\""}
+
+char_lit = { "'" ~ (!("'") ~ (escape | ANY)) ~ "'" }
+
+array_lit = { "{" ~ args ~ "}" }
+
+bool_lit = { "true" | "false" }
+
+id = $ { (ASCII_ALPHA | UNDERLINE | "$") ~ (ASCII_ALPHANUMERIC | UNDERLINE | "$")* }
+
+escape = _{ "\\\\"
+          | "\\\""
+          | "\\'"
+          | "\\n"
+          | "\\r"
+          | "\\t"
+          | "\\a"
+          | "\\b"
+          | "\\f"
+          | "\\v"
+          | "\\0"
+          }
+
+params = { id ~ ("," ~ id)* }
+mod_name = { id ~ ("." ~ id)* }
+args = { expr ~ ("," ~ expr)* }
+
+UNDERLINE = _ { "_" }
+
+SEMI = _ { ";" }
+
+WHITESPACE = _ { " "
+               | "\t"
+               | WHITE_SPACE
+               | NEWLINE
+               }
+
+COMMENT = _ { "#" ~ (!NEWLINE ~ ANY)* ~ NEWLINE? }
