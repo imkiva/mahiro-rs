@@ -82,10 +82,10 @@ loop_until_end = { "until" ~ expr | "end" }
 
 // for
 for_stmt = { "for" ~ id ~ for_header ~ for_body ~ "end" }
-for_each_stmt = { "foreach" ~ id ~ for_each_header ~ for_body ~ "end" }
+for_each_stmt = { "foreach" ~ id ~ for_each_header ~ for_body }
 for_header = { "=" ~ expr ~ "," ~ expr ~ "," ~ expr }
 for_each_header = { "in" ~ expr }
-for_body = { "do" ~ expr | common_body }
+for_body = { "do" ~ expr | common_body ~ "end" }
 
 // block
 block_stmt = { "block" ~ common_body ~ "end" }
