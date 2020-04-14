@@ -21,10 +21,10 @@ primary_stmt = { throw_stmt
                | func_decl
                | struct_decl
                | namespace_decl
+               | block_decl
                | if_stmt
                | while_stmt
                | switch_stmt
-               | block_stmt
                | for_stmt
                | for_each_stmt
                | loop_until_stmt
@@ -38,7 +38,7 @@ expr_stmt = { primary_prefix ~ (inc_dec | primary_postfix+)
             }
 
 // var
-var_kw = { "var" | "constant" | "const" }
+var_kw = _ { "var" | "constant" | "const" }
 var_decl = { var_kw ~ var_init ~ ("," ~ var_init)* }
 var_init = { id ~ "=" ~ expr
            | "(" ~ params ~ ")" ~ "=" ~ expr
@@ -82,7 +82,9 @@ loop_until_stmt = { "loop" ~ common_body ~ loop_until_end }
 loop_until_end = { "until" ~ expr | "end" }
 
 // break/continue
-loop_control = { "break" | "continue" }
+loop_control = { break_ | continue_ }
+break_ = { "break" }
+continue_ = { "continue" }
 
 // for
 for_stmt = { "for" ~ id ~ for_header ~ for_body }
@@ -92,7 +94,7 @@ for_each_header = { "in" ~ expr }
 for_body = { "do" ~ stmt | common_body ~ "end" }
 
 // block
-block_stmt = { "block" ~ common_body ~ "end" }
+block_decl = { "block" ~ common_body ~ "end" }
 
 // expr
 expr = { ternary_expr }
@@ -102,11 +104,11 @@ expr = { ternary_expr }
 ternary_expr = { logic_or_expr ~ ("?" ~ expr)? }
 
 // level 6
-logic_or_expr = { logic_and_expr ~ (or ~ logic_and_expr)* }
+logic_or_expr = { logic_and_expr ~ (or_op ~ logic_and_expr)* }
 // level 7
-logic_and_expr = { relation_expr ~ (and ~ relation_expr)* }
-and = { "and" | "&&" }
-or = { "or" | "||" }
+logic_and_expr = { relation_expr ~ (and_op ~ relation_expr)* }
+and_op = { "and" | "&&" }
+or_op = { "or" | "||" }
 
 // level 9
 relation_expr = { add_expr ~ (relation_op ~ add_expr)* }
@@ -168,19 +170,10 @@ literal = { number_lit
 null_lit = { "null" }
 
 number_lit = $ { number_float
-               | number_hex
-               | number_oct
-               | number_bin
                | number_dec
                }
 
 number_dec = _ { ("+" | "-")? ~ ASCII_DIGIT+ }
-
-number_oct = _ { ("+" | "-")? ~ "0o" ~ ASCII_OCT_DIGIT+ }
-
-number_hex = _ { ("+" | "-")? ~ "0x" ~ ASCII_HEX_DIGIT+ }
-
-number_bin = _ { ("+" | "-")? ~ "0b" ~ ASCII_BIN_DIGIT+ }
 
 number_float = _ { number_dec ~ "." ~ number_dec }
 
@@ -200,10 +193,6 @@ escape = _{ "\\\\"
           | "\\n"
           | "\\r"
           | "\\t"
-          | "\\a"
-          | "\\b"
-          | "\\f"
-          | "\\v"
           | "\\0"
           }
 
