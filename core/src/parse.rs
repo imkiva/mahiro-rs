@@ -6,6 +6,11 @@ use pest::error::Error;
 use pest::error::ErrorVariant;
 use crate::tree::Entry::{HeaderEntry, StmtEntry};
 use crate::tree::Header::{Using, Import, Package};
+use crate::tree::Stmt::{Break, Continue, Throw, Return, VarList, Var, Bind};
+use crate::tree::Expr::{Literal, Ternary, Question, Binary, Unary, Id, Lambda, Group};
+use std::collections::VecDeque;
+use crate::tree::Lit::{Null, Number, Bool, Str, Char, Array};
+use crate::tree::Param::{Normal, Varargs};
 
 pub type ParseErrorVariant = ErrorVariant<Rule>;
 pub type ParseError = Error<Rule>;
@@ -30,13 +35,205 @@ trait ParseTo<T> {
 
 impl ParseTo<Expr> for Pair<'_, Rule> {
     fn parse_to(self) -> Expr {
-        unimplemented!()
+        match self.as_rule() {
+            Rule::expr => fst!(self).unwrap().parse_to(),
+            Rule::ternary_expr => {
+                let mut iter = self.into_inner().into_iter();
+                let expr: Expr = iter.next().unwrap().parse_to();
+                match iter.next().map(|ternary| ternary.parse_to()) {
+                    Some(Literal(Lit::Pair(t, f))) => Ternary(expr.into(), t, f),
+                    Some(f) => Question(expr.into(), f.into()),
+                    _ => expr
+                }
+            }
+
+            // binary operators
+            Rule::logic_or_expr
+            | Rule::logic_and_expr
+            | Rule::relation_expr
+            | Rule::add_expr
+            | Rule::mul_expr
+            | Rule::pow_expr => {
+                let mut exprs = VecDeque::new();
+                let mut ops = Vec::new();
+
+                for inner in self.into_inner() {
+                    match inner.as_rule() {
+                        Rule::logic_and_expr => exprs.push_back(inner),
+                        Rule::relation_expr => exprs.push_back(inner),
+                        Rule::add_expr => exprs.push_back(inner),
+                        Rule::mul_expr => exprs.push_back(inner),
+                        Rule::pow_expr => exprs.push_back(inner),
+                        Rule::unary_expr => exprs.push_back(inner),
+
+                        Rule::or_op => ops.push(inner),
+                        Rule::and_op => ops.push(inner),
+                        Rule::relation_op => ops.push(inner),
+                        Rule::add_op => ops.push(inner),
+                        Rule::mul_op => ops.push(inner),
+                        Rule::pow_op => ops.push(inner),
+
+                        Rule::logic_or_expr => unreachable!("sanity check: logic_or_expr"),
+                        _ => unreachable!("unsatisfied binary expr"),
+                    }
+                }
+
+                let lhs = exprs.pop_front().unwrap().parse_to();
+
+                ops.into_iter().fold(lhs, |lhs, op| {
+                    let rhs = exprs.pop_front().unwrap().parse_to();
+                    Binary(op.parse_to(),
+                           Box::new(lhs),
+                           Box::new(rhs))
+                })
+            }
+
+            Rule::unary_expr => {
+                let mut iter = self.into_inner().into_iter();
+                let first = iter.next().unwrap();
+                match first.as_rule() {
+                    Rule::unary_op => {
+                        let expr = iter.next().unwrap().parse_to();
+                        Unary(first.parse_to(), Box::new(expr))
+                    }
+                    Rule::primary_expr => {
+                        let expr = first.parse_to();
+                        match iter.next() {
+                            Some(inc_dec) => Unary(inc_dec.parse_to(), Box::new(expr)),
+                            _ => expr,
+                        }
+                    }
+                    _ => unreachable!(),
+                }
+            }
+
+            Rule::primary_expr => {
+                // TODO
+                let mut iter = self.into_inner().into_iter();
+                let result = iter.next().unwrap().parse_to();
+                iter.fold(result, |prefix, postfix| {
+                    unimplemented!("I am sleeeeeeeping");
+                    prefix
+                })
+            }
+
+            // sub-rule of Rule::primary_expr
+            Rule::primary_prefix => {
+                let mut iter = self.into_inner().into_iter();
+                let first = iter.peek().unwrap();
+                match first.as_rule() {
+                    Rule::literal
+                    | Rule::lambda => first.parse_to(),
+                    Rule::id => Id(first.as_str().into()),
+                    Rule::expr => Group(iter.map(|expr| expr.parse_to()).collect()),
+                    _ => unreachable!(),
+                }
+            }
+
+            // sub-rule of Rule::primary_postfix
+            Rule::primary_postfix => unimplemented!("I am sleeeeeeeping"),
+
+            // sub-rule of Rule::primary_prefix
+            Rule::literal => {
+                let child = self.into_inner().into_iter().next().unwrap();
+                match child.as_rule() {
+                    Rule::number_lit => Literal(Number(child.as_str().parse::<f64>().unwrap())),
+                    Rule::bool_lit => Literal(Bool(child.as_str().parse::<bool>().unwrap())),
+                    Rule::null_lit => Literal(Null),
+                    Rule::string_lit => {
+                        // remove quote marks
+                        let s = child.as_str().to_owned();
+                        let s = s[1..s.len() - 1].into();
+                        // TODO: unescape the string
+                        Literal(Str(s))
+                    }
+                    Rule::char_lit => {
+                        let real = match child.as_str() {
+                            "'\\t'" => '\t',
+                            "'\\n'" => '\n',
+                            "'\\r'" => '\r',
+                            "'\\0'" => '\0',
+                            _ => child.as_str().to_owned()[1..2].parse::<char>().unwrap(),
+                        };
+                        Literal(Char(real))
+                    }
+                    Rule::array_lit => child.parse_to(),
+                    _ => unreachable!(),
+                }
+            }
+
+            // sub-rule of Rule::literal
+            Rule::array_lit => {
+                match self.into_inner().into_iter().next() {
+                    Some(args) => Literal(Array(args.parse_to())),
+                    _ => Literal(Array(vec![])),
+                }
+            }
+
+            // sub-rule of Rule::primary_prefix
+            Rule::lambda => {
+                let mut iter = self.into_inner().into_iter();
+                let callable_params = iter.next().unwrap();
+                let expr = iter.next().unwrap();
+                Lambda(callable_params.parse_to(), Box::new(expr.parse_to()))
+            }
+
+            _ => unimplemented!()
+        }
     }
 }
 
 impl ParseTo<Stmt> for Pair<'_, Rule> {
     fn parse_to(self) -> Stmt {
-        unimplemented!()
+        match self.as_rule() {
+            Rule::stmt => fst!(self).unwrap().parse_to(),
+            Rule::cross_line_stmt => fst!(self).unwrap().parse_to(),
+            Rule::primary_stmt => fst!(self).unwrap().parse_to(),
+            Rule::throw_stmt => Throw(fst!(self).unwrap().parse_to()),
+            Rule::return_stmt => Return(fst!(self).map(|expr| expr.parse_to())),
+            Rule::var_decl => {
+                let mut vars: Vec<Pair<Rule>> = self.into_inner().into_iter().collect();
+                if vars.len() == 1 {
+                    vars.pop().unwrap().parse_to()
+                } else {
+                    VarList(vars.into_iter().map(|init|
+                        match init.parse_to() {
+                            Stmt::Var(name, expr) => (name, expr),
+                            _ => unreachable!()
+                        })
+                        .collect())
+                }
+            }
+            // sub-rule of var_decl
+            Rule::var_init => {
+                let mut iter = self.into_inner().into_iter();
+                let first = iter.next().unwrap();
+                let expr = iter.next().unwrap();
+                match first.as_rule() {
+                    Rule::id => Var(first.parse_to(), expr.parse_to()),
+                    Rule::params => Bind(first.parse_to(), expr.parse_to()),
+                    _ => unreachable!(),
+                }
+            }
+
+            Rule::func_decl => unimplemented!(),
+            Rule::struct_decl => unimplemented!(),
+            Rule::namespace_decl => unimplemented!(),
+            Rule::block_decl => unimplemented!(),
+            Rule::if_stmt => unimplemented!(),
+            Rule::while_stmt => unimplemented!(),
+            Rule::switch_stmt => unimplemented!(),
+            Rule::for_stmt => unimplemented!(),
+            Rule::for_each_stmt => unimplemented!(),
+            Rule::loop_until_stmt => unimplemented!(),
+            Rule::loop_control => fst!(self).unwrap().parse_to(),
+            Rule::break_ => Break,
+            Rule::continue_ => Continue,
+            Rule::try_stmt => unimplemented!(),
+            Rule::expr_stmt => unimplemented!(),
+
+            _ => unreachable!()
+        }
     }
 }
 
@@ -56,7 +253,7 @@ impl ParseTo<Header> for Pair<'_, Rule> {
     }
 }
 
-impl ParseTo<String> for Pair<'_, Rule> {
+impl ParseTo<Name> for Pair<'_, Rule> {
     fn parse_to(self) -> String {
         match self.as_rule() {
             Rule::mod_name => self.into_inner().into_iter()
@@ -67,6 +264,105 @@ impl ParseTo<String> for Pair<'_, Rule> {
             Rule::id => self.as_str().to_owned(),
 
             _ => unimplemented!()
+        }
+    }
+}
+
+impl ParseTo<Vec<Name>> for Pair<'_, Rule> {
+    fn parse_to(self) -> Vec<Name> {
+        match self.as_rule() {
+            Rule::params => self.into_inner().into_iter()
+                .map(|id| id.parse_to())
+                .collect(),
+
+            _ => unimplemented!(),
+        }
+    }
+}
+
+impl ParseTo<Vec<Param>> for Pair<'_, Rule> {
+    fn parse_to(self) -> Vec<Param> {
+        match self.as_rule() {
+            Rule::params => self.into_inner().into_iter()
+                .map(|id| Normal(id.parse_to()))
+                .collect(),
+
+            Rule::callable_params => {
+                self.into_inner().into_iter()
+                    .flat_map(|child| match child.as_rule() {
+                        Rule::params => child.parse_to(),
+                        Rule::varargs_param => vec![Varargs(fst!(child).unwrap().parse_to())],
+                        _ => unreachable!(),
+                    })
+                    .collect()
+            }
+
+            _ => unimplemented!(),
+        }
+    }
+}
+
+impl ParseTo<Vec<Expr>> for Pair<'_, Rule> {
+    fn parse_to(self) -> Vec<Expr> {
+        match self.as_rule() {
+            Rule::args => self.into_inner().into_iter()
+                .map(|expr| expr.parse_to())
+                .collect(),
+
+            _ => unimplemented!(),
+        }
+    }
+}
+
+impl ParseTo<Op> for Pair<'_, Rule> {
+    fn parse_to(self) -> Op {
+        match self.as_str() {
+            "and" | "&&" => Op::And,
+            "or" | "||" => Op::Or,
+            "not" | "!" => Op::Not,
+            ">=" => Op::Ge,
+            ">" => Op::Gt,
+            "<=" => Op::Le,
+            "<" => Op::Lt,
+            "==" => Op::Eq,
+            "!=" => Op::Ne,
+            "+" => Op::Add,
+            "-" => Op::Sub,
+            "*" => Op::Mul,
+            "/" => Op::Div,
+            "^" => Op::Pow,
+            "%" => Op::Mod,
+            "=" => Op::Assign,
+            "+=" => Op::AddAss,
+            "-=" => Op::SubAss,
+            "*=" => Op::MulAss,
+            "/=" => Op::DivAss,
+            "^=" => Op::PowAss,
+            "%=" => Op::ModAss,
+            "new" => Op::New,
+            "gcnew" => Op::GcNew,
+            "typeid" => Op::Typeid,
+
+            // TODO: consider making it elegant
+            // or using a more portable way.
+            // this may be changed in the future
+            "++" => Op::Inc(
+                if self.as_rule() == Rule::unary_op {
+                    OpFix::Prefix
+                } else {
+                    OpFix::Postfix
+                }
+            ),
+
+            "--" => Op::Dec(
+                if self.as_rule() == Rule::unary_op {
+                    OpFix::Prefix
+                } else {
+                    OpFix::Postfix
+                }
+            ),
+
+            _ => unreachable!(),
         }
     }
 }
