@@ -65,7 +65,7 @@ pub type Body = Vec<Stmt>;
 pub enum Stmt {
     // declaration statements
     Var(Name, Expr),
-    VarBinding(Vec<Name>, Expr),
+    Bind(Vec<Name>, Expr),
     Func(Name, Vec<Name>, Body),
     Namespace(Name, Body),
     Struct(Name, Option<Name>, Body),
