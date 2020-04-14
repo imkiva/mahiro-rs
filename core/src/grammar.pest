@@ -127,9 +127,10 @@ pow_op = { "^" | "%" }
 unary_expr = { unary_op ~ expr
              | primary_expr ~ inc_dec?
              }
-unary_op = { inc_dec | not | add_op | "typeid" | "new" | "gcnew" }
+unary_op = { inc_dec | not_op | add_op | deref_op | "typeid" | "new" | "gcnew" }
 inc_dec = { "++" | "--" }
-not = { "not" | "!" }
+not_op = { "not" | "!" }
+deref_op = { "*" }
 
 primary_expr = { primary_prefix ~ primary_postfix* }
 primary_prefix = { "(" ~ expr ~ ("," ~ expr)* ~ ")"
