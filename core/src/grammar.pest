@@ -33,7 +33,7 @@ primary_stmt = { throw_stmt
                | expr_stmt
                }
 
-expr_stmt = { primary_prefix ~ primary_postfix+
+expr_stmt = { primary_prefix ~ (inc_dec | primary_postfix+)
             | inc_dec ~ expr
             }
 
@@ -150,7 +150,7 @@ index_access = { "[" ~ expr ~ "]" }
 member_access = { member_access_op ~ id }
 member_access_op = { "." | "->" }
 mapping = { ":" ~ expr }
-assign = { assign_op ~ expr }
+assign = { !inc_dec ~ assign_op ~ expr }
 assign_op = { "=" | "+=" | "-=" | "*=" | "/=" | "%=" | "^=" }
 flatten = { "..." }
 
