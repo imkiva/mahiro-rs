@@ -1,6 +1,6 @@
 pub type Name = String;
 
-#[derive(Debug)]
+#[derive(Debug, PartialOrd, PartialEq)]
 pub enum Lit {
     Number(f64),
     Bool(bool),
@@ -11,7 +11,7 @@ pub enum Lit {
     Null,
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialOrd, PartialEq)]
 pub enum Op {
     // binary
     Assign,
@@ -43,7 +43,7 @@ pub enum Op {
     PostDec,
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialOrd, PartialEq)]
 pub enum Expr {
     Literal(Lit),
     Lambda(Vec<Name>, Box<Expr>),
@@ -59,7 +59,7 @@ pub enum Expr {
 
 pub type Body = Vec<Stmt>;
 
-#[derive(Debug)]
+#[derive(Debug, PartialOrd, PartialEq)]
 pub enum Stmt {
     // declaration statements
     Var(Name, Expr),
@@ -86,20 +86,20 @@ pub enum Stmt {
     ExprStmt(Expr),
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialOrd, PartialEq)]
 pub enum Case {
     Sth(Expr),
     Default(Body),
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialOrd, PartialEq)]
 pub enum Header {
     Package(Name),
     Using(Name),
     Import(Name, Option<Name>),
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialOrd, PartialEq)]
 pub enum Entry {
     HeaderEntry(Header),
     StmtEntry(Stmt),
