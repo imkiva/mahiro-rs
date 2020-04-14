@@ -1,9 +1,3 @@
-use pest::Parser;
-
-#[derive(Parser)]
-#[grammar = "grammar.pest"]
-pub struct CovScriptParser;
-
 pub type Name = String;
 
 pub enum Lit {
@@ -12,7 +6,7 @@ pub enum Lit {
     Char(char),
     Str(String),
     Array(Vec<Expr>),
-    Pair(Expr, Expr),
+    Pair(Box<Expr>, Box<Expr>),
     Null,
 }
 
