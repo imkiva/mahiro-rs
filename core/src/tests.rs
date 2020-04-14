@@ -1,4 +1,4 @@
-#[cfg!(test)]
+#[cfg(test)]
 mod tests {
     #[test]
     fn works() {
