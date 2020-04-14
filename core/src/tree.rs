@@ -1,6 +1,6 @@
 pub type Name = String;
 
-#[derive(Debug, PartialOrd, PartialEq)]
+#[derive(Debug, PartialOrd, PartialEq, Clone)]
 pub enum Lit {
     Number(f64),
     Bool(bool),
@@ -11,16 +11,57 @@ pub enum Lit {
     Null,
 }
 
-#[derive(Debug, PartialOrd, PartialEq)]
+#[derive(Debug, PartialOrd, PartialEq, Clone)]
+pub enum Param {
+    Normal(Name),
+    Varargs(Name),
+}
+
+#[derive(Debug, PartialOrd, PartialEq, Clone)]
+pub enum Expr {
+    Literal(Lit),
+    Lambda(Vec<Param>, Box<Expr>),
+    Id(Name),
+    Group(Vec<Expr>),
+
+    Assign(Op, Box<Expr>, Box<Expr>),
+    Apply(Box<Expr>, Vec<Expr>),
+    Unary(Op, Box<Expr>),
+    Binary(Op, Box<Expr>, Box<Expr>),
+
+    // cond ? if_true : if_false
+    Ternary(Box<Expr>, Box<Expr>, Box<Expr>),
+    // cond ? if_false
+    Question(Box<Expr>, Box<Expr>),
+}
+
+#[derive(Debug, PartialOrd, PartialEq, Clone)]
+pub enum OpFix {
+    Prefix,
+    Postfix,
+}
+
+#[derive(Debug, PartialOrd, PartialEq, Clone)]
 pub enum Op {
     // binary
-    Assign,
     Add,
+    // also unary positive
     Sub,
+    // also unary negative
     Mul,
+    // also unary deref
     Div,
-    Mod,
     Pow,
+    Mod,
+    Assign,
+    AddAss,
+    SubAss,
+    MulAss,
+    DivAss,
+    PowAss,
+    ModAss,
+    And,
+    Or,
     Lt,
     Le,
     Gt,
@@ -30,41 +71,26 @@ pub enum Op {
     Access,
     Index,
     // unary
-    Neg,
-    Deref,
     Not,
     Typeid,
     New,
     GcNew,
     Flatten,
-    PreInc,
-    PreDec,
-    PostInc,
-    PostDec,
-}
-
-#[derive(Debug, PartialOrd, PartialEq)]
-pub enum Expr {
-    Literal(Lit),
-    Lambda(Vec<Name>, Box<Expr>),
-    Id(Name),
-    Group(Vec<Expr>),
-
-    Assign(Op, Box<Expr>, Box<Expr>),
-    Apply(Box<Expr>, Vec<Expr>),
-    Unary(Op, Box<Expr>),
-    Binary(Op, Box<Expr>, Box<Expr>),
-    Ternary(Box<Expr>, Box<Expr>, Box<Expr>),
+    Inc(OpFix),
+    Dec(OpFix),
 }
 
 pub type Body = Vec<Stmt>;
 
-#[derive(Debug, PartialOrd, PartialEq)]
+#[derive(Debug, PartialOrd, PartialEq, Clone)]
 pub enum Stmt {
     // declaration statements
+    // var x = 1
     Var(Name, Expr),
+    // var a = 1, b = 2, c = 3, ...
+    VarList(Vec<(Name, Expr)>),
     Bind(Vec<Name>, Expr),
-    Func(Name, Vec<Name>, Body),
+    Func(Name, Vec<Param>, Body),
     Namespace(Name, Body),
     Struct(Name, Option<Name>, Body),
     Block(Body),
@@ -86,20 +112,20 @@ pub enum Stmt {
     ExprStmt(Expr),
 }
 
-#[derive(Debug, PartialOrd, PartialEq)]
+#[derive(Debug, PartialOrd, PartialEq, Clone)]
 pub enum Case {
     Sth(Expr),
     Default(Body),
 }
 
-#[derive(Debug, PartialOrd, PartialEq)]
+#[derive(Debug, PartialOrd, PartialEq, Clone)]
 pub enum Header {
     Package(Name),
     Using(Name),
     Import(Name, Option<Name>),
 }
 
-#[derive(Debug, PartialOrd, PartialEq)]
+#[derive(Debug, PartialOrd, PartialEq, Clone)]
 pub enum Entry {
     HeaderEntry(Header),
     StmtEntry(Stmt),
