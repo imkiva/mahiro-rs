@@ -272,6 +272,32 @@ mod parse {
         ]);
     }
 
+    #[test]
+    fn parse_lambda_with_primary_expr() {
+        let prog = parse(
+            "var show = [](a) -> system.out.println(a)");
+        assert_eq!(prog, vec![
+            StmtEntry(Var("show".into(), Lambda(
+                vec![
+                    Normal("a".into()),
+                ],
+                Box::new(Apply(
+                    Box::new(
+                        Binary(Op::Access,
+                               Box::new(Binary(Op::Access,
+                                               Box::new(Id("system".into())),
+                                               Box::new(Id("out".into())),
+                               )),
+                               Box::new(Id("println".into())))
+                    ),
+                    vec![
+                        Id("a".into()),
+                    ],
+                )),
+            )))
+        ]);
+    }
+
     fn parse(input: &str) -> Program {
         CsParser::ast(input).expect("Compile Error")
     }
