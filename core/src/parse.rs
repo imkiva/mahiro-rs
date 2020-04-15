@@ -1,5 +1,6 @@
 use crate::tree::*;
 
+use std::collections::VecDeque;
 use pest::Parser;
 use pest::iterators::{Pair, Pairs};
 use pest::error::Error;
@@ -8,7 +9,6 @@ use crate::tree::Entry::{HeaderEntry, StmtEntry};
 use crate::tree::Header::{Using, Import, Package};
 use crate::tree::Stmt::{Break, Continue, Throw, Return, VarList, Var, Bind};
 use crate::tree::Expr::{Literal, Ternary, Question, Binary, Unary, Id, Lambda, Group, Apply, Assign};
-use std::collections::VecDeque;
 use crate::tree::Lit::{Null, Number, Bool, Str, Char, Array};
 use crate::tree::Param::{Normal, Varargs};
 
