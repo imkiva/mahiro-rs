@@ -44,12 +44,12 @@ pub enum OpFix {
 #[derive(Debug, PartialOrd, PartialEq, Clone)]
 pub enum Op {
     // binary
-    Add,
     // also unary positive
-    Sub,
+    Add,
     // also unary negative
-    Mul,
+    Sub,
     // also unary deref
+    Mul,
     Div,
     Pow,
     Mod,
