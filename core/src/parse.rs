@@ -7,7 +7,7 @@ use pest::error::ErrorVariant;
 use crate::tree::Entry::{HeaderEntry, StmtEntry};
 use crate::tree::Header::{Using, Import, Package};
 use crate::tree::Stmt::{Break, Continue, Throw, Return, VarList, Var, Bind};
-use crate::tree::Expr::{Literal, Ternary, Question, Binary, Unary, Id, Lambda, Group};
+use crate::tree::Expr::{Literal, Ternary, Question, Binary, Unary, Id, Lambda, Group, Apply, Assign};
 use std::collections::VecDeque;
 use crate::tree::Lit::{Null, Number, Bool, Str, Char, Array};
 use crate::tree::Param::{Normal, Varargs};
@@ -111,10 +111,8 @@ impl ParseTo<Expr> for Pair<'_, Rule> {
                 // TODO
                 let mut iter = self.into_inner().into_iter();
                 let result = iter.next().unwrap().parse_to();
-                iter.fold(result, |prefix, postfix| {
-                    unimplemented!("I am sleeeeeeeping");
-                    prefix
-                })
+                iter.flat_map(|postfix| postfix.into_inner())
+                    .fold(result, compose_postfix)
             }
 
             // sub-rule of Rule::primary_expr
@@ -131,7 +129,7 @@ impl ParseTo<Expr> for Pair<'_, Rule> {
             }
 
             // sub-rule of Rule::primary_postfix
-            Rule::primary_postfix => unimplemented!("I am sleeeeeeeping"),
+            Rule::primary_postfix => unreachable!("sanity check"),
 
             // sub-rule of Rule::primary_prefix
             Rule::literal => {
@@ -179,6 +177,7 @@ impl ParseTo<Expr> for Pair<'_, Rule> {
         }
     }
 }
+
 
 impl ParseTo<Stmt> for Pair<'_, Rule> {
     fn parse_to(self) -> Stmt {
@@ -409,6 +408,40 @@ fn unescape_char(ch: char) -> char {
         '\"' => '\"',
         '\\' => '\\',
         _ => ch,
+    }
+}
+
+fn compose_postfix(prefix: Expr, postfix: Pair<Rule>) -> Expr {
+    match postfix.as_rule() {
+        Rule::apply => Apply(Box::new(prefix),
+                             fst!(postfix)
+                                 .map(|args| args.parse_to())
+                                 .unwrap_or_default()),
+
+        Rule::index_access => Binary(Op::Index,
+                                     Box::new(prefix),
+                                     Box::new(fst!(postfix).unwrap().parse_to())),
+
+        Rule::member_access => Binary(Op::Access,
+                                      Box::new(prefix),
+                                      Box::new(Id(fst!(postfix).unwrap().parse_to()))),
+
+        Rule::mapping => {
+            let key = Box::new(prefix);
+            let value = Box::new(fst!(postfix).unwrap().parse_to());
+            Literal(Lit::Pair(key, value))
+        }
+
+        Rule::assign => {
+            let mut iter = postfix.into_inner().into_iter();
+            let op = iter.next().unwrap();
+            let expr = iter.next().unwrap();
+            Assign(op.parse_to(), Box::new(prefix), Box::new(expr.parse_to()))
+        }
+
+        Rule::flatten => Unary(Op::Flatten, Box::new(prefix)),
+
+        _ => unreachable!(),
     }
 }
 
