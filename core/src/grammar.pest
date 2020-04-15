@@ -151,7 +151,7 @@ primary_postfix = { apply
 apply = { "(" ~ args? ~ ")" }
 index_access = { "[" ~ expr ~ "]" }
 member_access = { member_access_op ~ id }
-member_access_op = { "." | "->" }
+member_access_op = _ { "." | "->" }
 mapping = { ":" ~ expr }
 assign = { !inc_dec ~ assign_op ~ expr }
 assign_op = { "=" | "+=" | "-=" | "*=" | "/=" | "%=" | "^=" }
