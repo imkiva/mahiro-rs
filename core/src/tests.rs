@@ -2,10 +2,10 @@
 mod parse {
     use crate::parse::*;
     use crate::tree::Header::{Import, Using, Package};
-    use crate::tree::{Program, Op};
+    use crate::tree::{Program, Op, OpFix};
     use crate::tree::Entry::{HeaderEntry, StmtEntry};
     use crate::tree::Stmt::{Throw, Var, Bind, VarList};
-    use crate::tree::Expr::{Id, Literal, Unary, Lambda, Binary, Apply};
+    use crate::tree::Expr::{Id, Literal, Unary, Lambda, Binary, Apply, Question, Ternary};
     use crate::tree::Lit::{Null, Number, Bool, Str, Char, Array, Pair};
     use crate::tree::Param::{Normal, Varargs};
 
@@ -282,19 +282,79 @@ mod parse {
                     Normal("a".into()),
                 ],
                 Box::new(Apply(
-                    Box::new(
-                        Binary(Op::Access,
-                               Box::new(Binary(Op::Access,
-                                               Box::new(Id("system".into())),
-                                               Box::new(Id("out".into())),
-                               )),
-                               Box::new(Id("println".into())))
+                    Box::new(Binary(
+                        Op::Access,
+                        Box::new(Binary(
+                            Op::Access,
+                            Box::new(Id("system".into())),
+                            Box::new(Id("out".into())),
+                        )),
+                        Box::new(Id("println".into())))
                     ),
                     vec![
                         Id("a".into()),
                     ],
                 )),
             )))
+        ]);
+    }
+
+    #[test]
+    fn parse_pre_inc_dec() {
+        let prog = parse(
+            "var a = ++x\n\
+            var b = y++\n\
+            var c = w--\n\
+            var d = --w\n\
+            ");
+        assert_eq!(prog, vec![
+            StmtEntry(Var("a".into(), Unary(Op::Inc(OpFix::Prefix), Box::new(Id("x".into()))))),
+            StmtEntry(Var("b".into(), Unary(Op::Inc(OpFix::Postfix), Box::new(Id("y".into()))))),
+            StmtEntry(Var("c".into(), Unary(Op::Dec(OpFix::Postfix), Box::new(Id("w".into()))))),
+            StmtEntry(Var("d".into(), Unary(Op::Dec(OpFix::Prefix), Box::new(Id("w".into()))))),
+        ]);
+    }
+
+    #[test]
+    fn parse_question_expr() {
+        let prog = parse(
+            "var r = a ? b");
+        assert_eq!(prog, vec![
+            StmtEntry(Var("r".into(), Question(
+                Box::new(Id("a".into())),
+                Box::new(Id("b".into()))))),
+        ]);
+    }
+
+    #[test]
+    fn parse_ternary_expr() {
+        let prog = parse(
+            "var r = a ? b : c");
+        assert_eq!(prog, vec![
+            StmtEntry(Var("r".into(), Ternary(
+                Box::new(Id("a".into())),
+                Box::new(Id("b".into())),
+                Box::new(Id("c".into()))))),
+        ]);
+    }
+
+    #[test]
+    fn parse_binary_expr() {
+        let prog = parse(
+            "var a = 1 + 2 * 3 + 4");
+        assert_eq!(prog, vec![
+            StmtEntry(Var("a".into(), Binary(
+                Op::Add,
+                Box::new(Binary(
+                    Op::Add,
+                    Box::new(Literal(Number(1.0))),
+                    Box::new(Binary(
+                        Op::Mul,
+                        Box::new(Literal(Number(2.0))),
+                        Box::new(Literal(Number(3.0))))),
+                )),
+                Box::new(Literal(Number(4.0)))))
+            )
         ]);
     }
 
