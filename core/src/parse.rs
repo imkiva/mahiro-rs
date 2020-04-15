@@ -108,11 +108,10 @@ impl ParseTo<Expr> for Pair<'_, Rule> {
             }
 
             Rule::primary_expr => {
-                // TODO
                 let mut iter = self.into_inner().into_iter();
                 let result = iter.next().unwrap().parse_to();
                 iter.flat_map(|postfix| postfix.into_inner())
-                    .fold(result, compose_postfix)
+                    .fold(result, build_primary_expr)
             }
 
             // sub-rule of Rule::primary_expr
@@ -195,6 +194,8 @@ impl ParseTo<Stmt> for Pair<'_, Rule> {
                     VarList(vars.into_iter().map(|init|
                         match init.parse_to() {
                             Stmt::Var(name, expr) => (name, expr),
+                            // TODO: consider support binding
+                            Stmt::Bind(_, _) => unimplemented!("unstable feature"),
                             _ => unreachable!()
                         })
                         .collect())
@@ -411,7 +412,7 @@ fn unescape_char(ch: char) -> char {
     }
 }
 
-fn compose_postfix(prefix: Expr, postfix: Pair<Rule>) -> Expr {
+fn build_primary_expr(prefix: Expr, postfix: Pair<Rule>) -> Expr {
     match postfix.as_rule() {
         Rule::apply => Apply(Box::new(prefix),
                              fst!(postfix)
