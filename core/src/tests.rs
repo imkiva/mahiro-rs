@@ -5,8 +5,9 @@ mod parse {
     use crate::tree::{Program, Op};
     use crate::tree::Entry::{HeaderEntry, StmtEntry};
     use crate::tree::Stmt::{Throw, Var, Bind, VarList};
-    use crate::tree::Expr::{Id, Literal, Unary};
+    use crate::tree::Expr::{Id, Literal, Unary, Lambda, Binary, Apply};
     use crate::tree::Lit::{Null, Number, Bool, Str, Char, Array, Pair};
+    use crate::tree::Param::{Normal, Varargs};
 
     #[test]
     fn works() {
@@ -240,7 +241,35 @@ mod parse {
 
     #[test]
     fn parse_lambda() {
-        assert_eq!(1 + 1, 2);
+        let prog = parse(
+            "var id = [](a) -> a");
+        assert_eq!(prog, vec![
+            StmtEntry(Var("id".into(), Lambda(
+                vec![Normal("a".into())],
+                Box::new(Id("a".into())),
+            )))
+        ]);
+    }
+
+    #[test]
+    fn parse_lambda_with_varargs() {
+        let prog = parse(
+            "var format = [](fmt, ...arg) -> echo(fmt, arg...)");
+        assert_eq!(prog, vec![
+            StmtEntry(Var("format".into(), Lambda(
+                vec![
+                    Normal("fmt".into()),
+                    Varargs("arg".into()),
+                ],
+                Box::new(Apply(
+                    Box::new(Id("echo".into())),
+                    vec![
+                        Id("fmt".into()),
+                        Unary(Op::Flatten, Box::new(Id("arg".into()))),
+                    ],
+                )),
+            )))
+        ]);
     }
 
     fn parse(input: &str) -> Program {
