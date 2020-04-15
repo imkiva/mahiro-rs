@@ -144,18 +144,15 @@ impl ParseTo<Expr> for Pair<'_, Rule> {
                         // remove quote marks
                         let s = child.as_str().to_owned();
                         let s = s[1..s.len() - 1].into();
-                        // TODO: unescape the string
-                        Literal(Str(s))
+                        Literal(Str(unescape(s)))
                     }
                     Rule::char_lit => {
-                        let real = match child.as_str() {
-                            "'\\t'" => '\t',
-                            "'\\n'" => '\n',
-                            "'\\r'" => '\r',
-                            "'\\0'" => '\0',
-                            _ => child.as_str().to_owned()[1..2].parse::<char>().unwrap(),
-                        };
-                        Literal(Char(real))
+                        let s = child.as_str().to_owned();
+                        let peek = s[1..2].parse::<char>().unwrap();
+                        match peek {
+                            '\\' => Literal(Char(unescape_char(s[2..3].parse::<char>().unwrap()))),
+                            _ => Literal(Char(peek)),
+                        }
                     }
                     Rule::array_lit => child.parse_to(),
                     _ => unreachable!(),
@@ -378,6 +375,40 @@ impl ParseTo<Program> for Pairs<'_, Rule> {
                 _ => unreachable!(),
             })
             .collect()
+    }
+}
+
+fn unescape(input: &str) -> String {
+    let mut str = String::with_capacity(input.len());
+    let mut escape = false;
+    for ch in input.chars() {
+        if escape {
+            escape = false;
+            str.push(unescape_char(ch));
+        } else {
+            match ch {
+                '\\' => escape = true,
+                _ => str.push(ch),
+            }
+        }
+    }
+    str
+}
+
+fn unescape_char(ch: char) -> char {
+    match ch {
+        't' => '\t',
+        'n' => '\n',
+        'r' => '\r',
+        'a' => '\u{07}',
+        'b' => '\u{08}',
+        'f' => '\u{0C}',
+        'v' => '\u{0B}',
+        '0' => '\0',
+        '\'' => '\'',
+        '\"' => '\"',
+        '\\' => '\\',
+        _ => ch,
     }
 }
 

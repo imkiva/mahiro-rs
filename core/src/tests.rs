@@ -197,9 +197,16 @@ mod parse {
     #[test]
     fn parse_char_literal_with_escape() {
         let prog = parse(
-            "var a = '\\t'");
+            "var a = '\\t' \n\
+            var b = '\\'' \n\
+            var c = '\\n' \n\
+            var d = '\\\\' \n\
+            ");
         assert_eq!(prog, vec![
             StmtEntry(Var("a".into(), Literal(Char('\t')))),
+            StmtEntry(Var("b".into(), Literal(Char('\'')))),
+            StmtEntry(Var("c".into(), Literal(Char('\n')))),
+            StmtEntry(Var("d".into(), Literal(Char('\\')))),
         ]);
     }
 
