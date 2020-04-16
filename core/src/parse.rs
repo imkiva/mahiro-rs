@@ -132,7 +132,7 @@ impl ParseTo<Expr> for Pair<'_, Rule> {
 
             // sub-rule of Rule::primary_prefix
             Rule::literal => {
-                let child = self.into_inner().into_iter().next().unwrap();
+                let child = fst!(self).unwrap();
                 match child.as_rule() {
                     Rule::number_lit => Literal(Number(child.as_str().parse::<f64>().unwrap())),
                     Rule::bool_lit => Literal(Bool(child.as_str().parse::<bool>().unwrap())),
@@ -158,7 +158,7 @@ impl ParseTo<Expr> for Pair<'_, Rule> {
 
             // sub-rule of Rule::literal
             Rule::array_lit => {
-                match self.into_inner().into_iter().next() {
+                match fst!(self) {
                     Some(args) => Literal(Array(args.parse_to())),
                     _ => Literal(Array(vec![])),
                 }
@@ -236,7 +236,7 @@ impl ParseTo<Stmt> for Pair<'_, Rule> {
 
 impl ParseTo<Header> for Pair<'_, Rule> {
     fn parse_to(self) -> Header {
-        let child = self.into_inner().into_iter().next().unwrap();
+        let child = fst!(self).unwrap();
         match child.as_rule() {
             Rule::using_decl => Using(fst!(child).unwrap().parse_to()),
             Rule::import_decl => {
