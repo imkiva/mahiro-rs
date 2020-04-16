@@ -7,10 +7,11 @@ use pest::error::Error;
 use pest::error::ErrorVariant;
 use crate::tree::Entry::{HeaderEntry, StmtEntry};
 use crate::tree::Header::{Using, Import, Package};
-use crate::tree::Stmt::{Break, Continue, Throw, Return, VarList, Var, Bind};
+use crate::tree::Stmt::{Break, Continue, Throw, Return, VarList, Var};
 use crate::tree::Expr::{Literal, Ternary, Question, Binary, Unary, Id, Lambda, Group, Apply, Assign};
 use crate::tree::Lit::{Null, Number, Bool, Str, Char, Array};
 use crate::tree::Param::{Normal, Varargs};
+use crate::tree::VarInit::{Simple, Structured};
 
 pub type ParseErrorVariant = ErrorVariant<Rule>;
 pub type ParseError = Error<Rule>;
@@ -186,6 +187,8 @@ impl ParseTo<Stmt> for Pair<'_, Rule> {
             Rule::primary_stmt => fst!(self).unwrap().parse_to(),
             Rule::throw_stmt => Throw(fst!(self).unwrap().parse_to()),
             Rule::return_stmt => Return(fst!(self).map(|expr| expr.parse_to())),
+
+            // variable declaration
             Rule::var_decl => {
                 let mut vars: Vec<Pair<Rule>> = self.into_inner().into_iter().collect();
                 if vars.len() == 1 {
@@ -193,9 +196,7 @@ impl ParseTo<Stmt> for Pair<'_, Rule> {
                 } else {
                     VarList(vars.into_iter().map(|init|
                         match init.parse_to() {
-                            Stmt::Var(name, expr) => (name, expr),
-                            // TODO: consider support binding
-                            Stmt::Bind(_, _) => unimplemented!("unstable feature"),
+                            Stmt::Var(init) => init,
                             _ => unreachable!()
                         })
                         .collect())
@@ -207,8 +208,8 @@ impl ParseTo<Stmt> for Pair<'_, Rule> {
                 let first = iter.next().unwrap();
                 let expr = iter.next().unwrap();
                 match first.as_rule() {
-                    Rule::id => Var(first.parse_to(), expr.parse_to()),
-                    Rule::params => Bind(first.parse_to(), expr.parse_to()),
+                    Rule::id => Var(Simple(first.parse_to(), expr.parse_to())),
+                    Rule::params => Var(Structured(first.parse_to(), expr.parse_to())),
                     _ => unreachable!(),
                 }
             }

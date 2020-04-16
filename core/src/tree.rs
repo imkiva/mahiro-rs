@@ -85,11 +85,8 @@ pub type Body = Vec<Stmt>;
 #[derive(Debug, PartialOrd, PartialEq, Clone)]
 pub enum Stmt {
     // declaration statements
-    // var x = 1
-    Var(Name, Expr),
-    // var a = 1, b = 2, c = 3, ...
-    VarList(Vec<(Name, Expr)>),
-    Bind(Vec<Name>, Expr),
+    Var(VarInit),
+    VarList(Vec<VarInit>),
     Func(Name, Vec<Param>, Body),
     Namespace(Name, Body),
     Struct(Name, Option<Name>, Body),
@@ -110,6 +107,12 @@ pub enum Stmt {
 
     // expression statement
     ExprStmt(Expr),
+}
+
+#[derive(Debug, PartialOrd, PartialEq, Clone)]
+pub enum VarInit {
+    Simple(Name, Expr),
+    Structured(Vec<Name>, Expr),
 }
 
 #[derive(Debug, PartialOrd, PartialEq, Clone)]
