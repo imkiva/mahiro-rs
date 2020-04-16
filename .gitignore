@@ -36,3 +36,4 @@
 .idea/
 cmake-*
 
+/core/target/
