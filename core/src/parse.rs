@@ -172,7 +172,7 @@ impl ParseTo<Expr> for Pair<'_, Rule> {
                 Lambda(callable_params.parse_to(), Box::new(expr.parse_to()))
             }
 
-            _ => unimplemented!()
+            _ => unreachable!("run out of expr parser"),
         }
     }
 }
