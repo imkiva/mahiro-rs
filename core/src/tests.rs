@@ -4,7 +4,7 @@ mod parse {
     use crate::tree::Header::{Import, Using, Package};
     use crate::tree::{Program, Op, OpFix, Stmt};
     use crate::tree::Entry::{HeaderEntry, StmtEntry};
-    use crate::tree::Stmt::{Throw, Var, VarList, ExprStmt, Func, Namespace, Block, Struct, Return, Try};
+    use crate::tree::Stmt::{Throw, Var, VarList, ExprStmt, Func, Namespace, Block, Struct, Return, Try, If, While, Loop, Break, Continue, For, ForEach};
     use crate::tree::Expr::{Id, Literal, Unary, Lambda, Binary, Apply, Question, Ternary, Assign};
     use crate::tree::Lit::{Null, Number, Bool, Str, Char, Array, Pair};
     use crate::tree::Param::{Normal, Varargs};
@@ -588,6 +588,201 @@ mod parse {
                             Box::new(Id("printStackTrace".into())))),
                         vec![]))
                 ],
+            ))
+        ]);
+    }
+
+    #[test]
+    fn parse_if() {
+        let prog = parse("\
+        if a > 1 && a < 10\n\
+            yes()\n\
+        end");
+        assert_eq!(prog, vec![
+            StmtEntry(
+                If(Binary(
+                    Op::And,
+                    Box::new(Binary(
+                        Op::Gt,
+                        Box::new(Id("a".into())),
+                        Box::new(Literal(Number(1.0))))),
+                    Box::new(Binary(
+                        Op::Lt,
+                        Box::new(Id("a".into())),
+                        Box::new(Literal(Number(10.0)))))),
+                   vec![
+                       ExprStmt(Apply(Box::new(Id("yes".into())), vec![])),
+                   ],
+                   None)
+            )
+        ]);
+    }
+
+    #[test]
+    fn parse_if_else() {
+        let prog = parse("\
+        if a > 1 && a < 10\n\
+            yes()\n\
+        else\n\
+            no()\n\
+        end");
+        assert_eq!(prog, vec![
+            StmtEntry(
+                If(Binary(
+                    Op::And,
+                    Box::new(Binary(
+                        Op::Gt,
+                        Box::new(Id("a".into())),
+                        Box::new(Literal(Number(1.0))))),
+                    Box::new(Binary(
+                        Op::Lt,
+                        Box::new(Id("a".into())),
+                        Box::new(Literal(Number(10.0)))))),
+                   vec![
+                       ExprStmt(Apply(Box::new(Id("yes".into())), vec![])),
+                   ],
+                   Some(vec![
+                       ExprStmt(Apply(Box::new(Id("no".into())), vec![])),
+                   ])))
+        ]);
+    }
+
+    #[test]
+    fn parse_while() {
+        let prog = parse("\
+        while a > 1 && a < 10\n\
+            yes()\n\
+        end");
+        assert_eq!(prog, vec![
+            StmtEntry(
+                While(
+                    Binary(Op::And,
+                           Box::new(Binary(
+                               Op::Gt,
+                               Box::new(Id("a".into())),
+                               Box::new(Literal(Number(1.0))))),
+                           Box::new(Binary(
+                               Op::Lt,
+                               Box::new(Id("a".into())),
+                               Box::new(Literal(Number(10.0)))))),
+                    vec![
+                        ExprStmt(Apply(Box::new(Id("yes".into())), vec![])),
+                    ],
+                )
+            )
+        ]);
+    }
+
+    #[test]
+    fn parse_loop() {
+        let prog = parse("\
+        loop\n\
+            yes()\n\
+        end");
+        assert_eq!(prog, vec![
+            StmtEntry(
+                Loop(
+                    None,
+                    vec![
+                        ExprStmt(Apply(Box::new(Id("yes".into())), vec![])),
+                    ],
+                )
+            )
+        ]);
+    }
+
+    #[test]
+    fn parse_loop_until() {
+        let prog = parse("\
+        loop\n\
+            yes()\n\
+        until a <= 1 || a >= 10");
+        assert_eq!(prog, vec![
+            StmtEntry(
+                Loop(
+                    Some(Binary(Op::Or,
+                                Box::new(Binary(
+                                    Op::Le,
+                                    Box::new(Id("a".into())),
+                                    Box::new(Literal(Number(1.0))))),
+                                Box::new(Binary(
+                                    Op::Ge,
+                                    Box::new(Id("a".into())),
+                                    Box::new(Literal(Number(10.0))))))),
+                    vec![
+                        ExprStmt(Apply(Box::new(Id("yes".into())), vec![])),
+                    ],
+                )
+            )
+        ]);
+    }
+
+    #[test]
+    fn parse_break() {
+        let prog = parse("\
+        while true\n\
+            break\n\
+        end");
+        assert_eq!(prog, vec![
+            StmtEntry(While(Literal(Bool(true)), vec![Break]))
+        ]);
+    }
+
+    #[test]
+    fn parse_continue() {
+        let prog = parse("\
+        while true\n\
+            continue\n\
+        end");
+        assert_eq!(prog, vec![
+            StmtEntry(While(Literal(Bool(true)), vec![Continue]))
+        ]);
+    }
+
+    #[test]
+    fn parse_break_and_continue() {
+        let prog = parse("\
+        while true\n\
+            continue\n\
+            break\n\
+        end");
+        assert_eq!(prog, vec![
+            StmtEntry(While(Literal(Bool(true)), vec![Continue, Break]))
+        ]);
+    }
+
+    #[test]
+    fn parse_for() {
+        let prog = parse("\
+        var sum = 0\n\
+        for i = 0, i < 100, ++i\n\
+            sum += i\n\
+        end");
+        assert_eq!(prog, vec![
+            StmtEntry(Var(Simple("sum".into(), Literal(Number(0.0))))),
+            StmtEntry(For(
+                "i".into(),
+                Literal(Number(0.0)),
+                Binary(Op::Lt, Box::new(Id("i".into())), Box::new(Literal(Number(100.0)))),
+                Unary(Op::Inc(OpFix::Prefix), Box::new(Id("i".into()))),
+                vec![
+                    ExprStmt(Assign(Op::AddAss,
+                                    Box::new(Id("sum".into())),
+                                    Box::new(Id("i".into()))))
+                ])
+            ),
+        ]);
+    }
+
+    #[test]
+    fn parse_for_each() {
+        let prog = parse("\
+        foreach i in range(10) do love(i)");
+        assert_eq!(prog, vec![
+            StmtEntry(ForEach(
+                "i".into(),
+                Apply(Box::new(Id("range".into())), vec![Literal(Number(10.0))]),
+                vec![ExprStmt(Apply(Box::new(Id("love".into())), vec![Id("i".into())]))],
             ))
         ]);
     }
