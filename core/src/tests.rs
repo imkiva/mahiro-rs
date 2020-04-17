@@ -2,9 +2,9 @@
 mod parse {
     use crate::parse::*;
     use crate::tree::Header::{Import, Using, Package};
-    use crate::tree::{Program, Op, OpFix};
+    use crate::tree::{Program, Op, OpFix, Stmt};
     use crate::tree::Entry::{HeaderEntry, StmtEntry};
-    use crate::tree::Stmt::{Throw, Var, VarList, ExprStmt, Func, Namespace, Block};
+    use crate::tree::Stmt::{Throw, Var, VarList, ExprStmt, Func, Namespace, Block, Struct, Return};
     use crate::tree::Expr::{Id, Literal, Unary, Lambda, Binary, Apply, Question, Ternary, Assign};
     use crate::tree::Lit::{Null, Number, Bool, Str, Char, Array, Pair};
     use crate::tree::Param::{Normal, Varargs};
@@ -468,6 +468,61 @@ mod parse {
     }
 
     #[test]
+    fn parse_struct_decl() {
+        let prog = parse("\
+        struct jiegebuyao\n\
+            constant awsl = jiegebuyao\n\
+            constant binbin = 114514\n\
+        end\n\
+        ");
+        assert_eq!(prog, vec![
+            StmtEntry(Struct("jiegebuyao".into(), None, vec![
+                Var(Simple("awsl".into(), Id("jiegebuyao".into()))),
+                Var(Simple("binbin".into(), Literal(Number(114514 as f64)))),
+            ]))
+        ]);
+    }
+
+    #[test]
+    fn parse_struct_decl_with_extends() {
+        let prog = parse("\
+        struct jiegebuyao extends boynextdoor\n\
+            constant awsl = jiegebuyao\n\
+            constant binbin = 114514\n\
+        end\n\
+        ");
+        assert_eq!(prog, vec![
+            StmtEntry(Struct("jiegebuyao".into(), Some(Id("boynextdoor".into())), vec![
+                Var(Simple("awsl".into(), Id("jiegebuyao".into()))),
+                Var(Simple("binbin".into(), Literal(Number(114514 as f64)))),
+            ]))
+        ]);
+    }
+
+    #[test]
+    fn parse_struct_decl_with_complex_extends() {
+        let prog = parse("\
+        struct jiegebuyao extends resolve(\"boy\")\n\
+            constant awsl = jiegebuyao\n\
+            constant binbin = 114514\n\
+        end\n\
+        ");
+        assert_eq!(prog, vec![
+            StmtEntry(Struct(
+                "jiegebuyao".into(),
+                Some(Apply(
+                    Box::new(Id("resolve".into())),
+                    vec![Literal(Str("boy".into()))],
+                )),
+                vec![
+                    Var(Simple("awsl".into(), Id("jiegebuyao".into()))),
+                    Var(Simple("binbin".into(), Literal(Number(114514 as f64)))),
+                ],
+            ))
+        ]);
+    }
+
+    #[test]
     fn parse_empty_block_decl() {
         let prog = parse("\
         block\n\
@@ -477,6 +532,36 @@ mod parse {
             StmtEntry(Block(
                 vec![],
             ))
+        ]);
+    }
+
+    #[test]
+    fn parse_return() {
+        let prog = parse("return");
+        assert_eq!(prog, vec![
+            StmtEntry(Return(None))
+        ]);
+    }
+
+    #[test]
+    fn parse_return_sth() {
+        let prog = parse("return i_single_push_minato_aqua");
+        assert_eq!(prog, vec![
+            StmtEntry(Return(Some(Id("i_single_push_minato_aqua".into()))))
+        ]);
+    }
+
+    #[test]
+    fn parse_return_in_func() {
+        let prog = parse("\
+        function jiegebuyao()\n\
+            return\n\
+        end\n\
+        ");
+        assert_eq!(prog, vec![
+            StmtEntry(Func("jiegebuyao".into(), vec![], vec![
+                Return(None),
+            ]))
         ]);
     }
 
