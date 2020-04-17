@@ -7,12 +7,19 @@ use pest::error::Error;
 use pest::error::ErrorVariant;
 use crate::tree::Entry::{HeaderEntry, StmtEntry};
 use crate::tree::Header::{Using, Import, Package};
-use crate::tree::Stmt::{Break, Continue, Throw, Return, VarList, Var, Func, Struct, Namespace, Block, If, While, For, ForEach, Loop, Try, ExprStmt, Switch};
-use crate::tree::Expr::{Literal, Ternary, Question, Binary, Unary, Id, Lambda, Group, Apply, Assign};
-use crate::tree::Lit::{Null, Number, Bool, Str, Char, Array};
 use crate::tree::Param::{Normal, Varargs};
 use crate::tree::VarInit::{Simple, Structured};
 use crate::tree::Case::{Sth, Dft};
+use crate::tree::Lit::{Null, Number, Bool, Str,
+                       Char, Array};
+use crate::tree::Expr::{Literal, Ternary, Question, Binary,
+                        Unary, Id, Lambda, Group,
+                        Apply, Assign};
+use crate::tree::Stmt::{Break, Continue, Throw, Return,
+                        VarList, Var, Func, Struct,
+                        Namespace, Block, If, While,
+                        For, ForEach, Loop,
+                        Try, ExprStmt, Switch};
 
 pub type ParseErrorVariant = ErrorVariant<Rule>;
 pub type ParseError = Error<Rule>;
