@@ -4,7 +4,7 @@ mod parse {
     use crate::tree::Header::{Import, Using, Package};
     use crate::tree::{Program, Op, OpFix};
     use crate::tree::Entry::{HeaderEntry, StmtEntry};
-    use crate::tree::Stmt::{Throw, Var, VarList, ExprStmt};
+    use crate::tree::Stmt::{Throw, Var, VarList, ExprStmt, Func, Namespace, Block};
     use crate::tree::Expr::{Id, Literal, Unary, Lambda, Binary, Apply, Question, Ternary, Assign};
     use crate::tree::Lit::{Null, Number, Bool, Str, Char, Array, Pair};
     use crate::tree::Param::{Normal, Varargs};
@@ -376,6 +376,107 @@ mod parse {
             StmtEntry(ExprStmt(Assign(Op::Assign,
                                       Box::new(Id("a".into())),
                                       Box::new(Literal(Number(100.0)))))),
+        ]);
+    }
+
+    #[test]
+    fn parse_func_decl() {
+        let prog = parse("\
+        function jiegebuyao()\n\
+        end\n\
+        ");
+        assert_eq!(prog, vec![
+            StmtEntry(Func("jiegebuyao".into(), vec![], vec![]))
+        ]);
+    }
+
+    #[test]
+    fn parse_func_decl_with_args() {
+        let prog = parse("\
+        function jiegebuyao(a, b, c)\n\
+        end\n\
+        ");
+        assert_eq!(prog, vec![
+            StmtEntry(Func("jiegebuyao".into(),
+                           vec![
+                               Normal("a".into()),
+                               Normal("b".into()),
+                               Normal("c".into())],
+                           vec![],
+            ))
+        ]);
+    }
+
+    #[test]
+    fn parse_func_decl_with_varargs() {
+        let prog = parse("\
+        function jiegebuyao(a, b, ...c)\n\
+        end\n\
+        ");
+        assert_eq!(prog, vec![
+            StmtEntry(Func("jiegebuyao".into(),
+                           vec![
+                               Normal("a".into()),
+                               Normal("b".into()),
+                               Varargs("c".into())],
+                           vec![],
+            ))
+        ]);
+    }
+
+    #[test]
+    fn parse_func_decl_with_single_varargs() {
+        let prog = parse("\
+        function jiegebuyao(...x)\n\
+        end\n\
+        ");
+        assert_eq!(prog, vec![
+            StmtEntry(Func("jiegebuyao".into(),
+                           vec![Varargs("x".into())],
+                           vec![],
+            ))
+        ]);
+    }
+
+    #[test]
+    fn parse_empty_namespace_decl() {
+        let prog = parse("\
+        namespace jiegebuyao\n\
+        end\n\
+        ");
+        assert_eq!(prog, vec![
+            StmtEntry(Namespace("jiegebuyao".into(),
+                                vec![],
+            ))
+        ]);
+    }
+
+    #[test]
+    fn parse_namespace_decl() {
+        let prog = parse("\
+        namespace jiegebuyao\n\
+            constant awsl = jiegebuyao\n\
+            constant binbin = 114514\n\
+        end\n\
+        ");
+        assert_eq!(prog, vec![
+            StmtEntry(Namespace("jiegebuyao".into(), vec![
+                Var(Simple("awsl".into(), Id("jiegebuyao".into()))),
+                Var(Simple("binbin".into(), Literal(Number(114514 as f64)))),
+            ]))
+        ]);
+    }
+
+    #[test]
+    fn parse_empty_block_decl() {
+        let prog = parse("\
+        block\n\
+        end\n\
+        ");
+        assert_eq!(prog, vec![
+            StmtEntry(Block(
+                vec![],
+            ))
         ]);
     }
 
