@@ -7,11 +7,12 @@ use pest::error::Error;
 use pest::error::ErrorVariant;
 use crate::tree::Entry::{HeaderEntry, StmtEntry};
 use crate::tree::Header::{Using, Import, Package};
-use crate::tree::Stmt::{Break, Continue, Throw, Return, VarList, Var, Func, Struct};
+use crate::tree::Stmt::{Break, Continue, Throw, Return, VarList, Var, Func, Struct, Namespace, Block, If, While, For, ForEach, Loop, Try, ExprStmt, Switch};
 use crate::tree::Expr::{Literal, Ternary, Question, Binary, Unary, Id, Lambda, Group, Apply, Assign};
 use crate::tree::Lit::{Null, Number, Bool, Str, Char, Array};
 use crate::tree::Param::{Normal, Varargs};
 use crate::tree::VarInit::{Simple, Structured};
+use crate::tree::Case::{Sth, Dft};
 
 pub type ParseErrorVariant = ErrorVariant<Rule>;
 pub type ParseError = Error<Rule>;
@@ -135,11 +136,11 @@ impl ParseTo<Expr> for Pair<'_, Rule> {
 
             // sub-rule of Rule::primary_expr
             Rule::primary_prefix => {
-                let mut iter = self.into_inner().into_iter();
+                let iter = self.into_inner().into_iter();
                 let first = iter.peek().unwrap();
                 match first.as_rule() {
-                    Rule::literal
-                    | Rule::lambda => first.parse_to(),
+                    Rule::literal |
+                    Rule::lambda => first.parse_to(),
                     Rule::id => Id(first.as_str().into()),
                     Rule::expr => Group(iter.map(|expr| expr.parse_to()).collect()),
                     _ => unreachable!(),
@@ -222,7 +223,7 @@ impl ParseTo<Name> for Pair<'_, Rule> {
 
             Rule::id => self.as_str().to_owned(),
 
-            _ => unimplemented!()
+            _ => unreachable!()
         }
     }
 }
@@ -234,7 +235,7 @@ impl ParseTo<Vec<Name>> for Pair<'_, Rule> {
                 .map(|id| id.parse_to())
                 .collect(),
 
-            _ => unimplemented!(),
+            _ => unreachable!(),
         }
     }
 }
@@ -256,7 +257,7 @@ impl ParseTo<Vec<Param>> for Pair<'_, Rule> {
                     .collect()
             }
 
-            _ => unimplemented!(),
+            _ => unreachable!(),
         }
     }
 }
@@ -268,7 +269,7 @@ impl ParseTo<Vec<Expr>> for Pair<'_, Rule> {
                 .map(|expr| expr.parse_to())
                 .collect(),
 
-            _ => unimplemented!(),
+            _ => unreachable!(),
         }
     }
 }
@@ -423,49 +424,132 @@ impl ParseTo<Stmt> for Pair<'_, Rule> {
             Rule::var_init => {
                 let mut iter = self.into_inner().into_iter();
                 let first = iter.next().unwrap();
-                let expr = iter.next().unwrap();
+                let expr = iter.next().unwrap().parse_to();
                 match first.as_rule() {
-                    Rule::id => Var(Simple(first.parse_to(), expr.parse_to())),
-                    Rule::params => Var(Structured(first.parse_to(), expr.parse_to())),
+                    Rule::id => Var(Simple(first.parse_to(), expr)),
+                    Rule::params => Var(Structured(first.parse_to(), expr)),
                     _ => unreachable!(),
                 }
             }
 
             Rule::func_decl => {
                 let mut iter = self.into_inner().into_iter();
-                let id = iter.next().unwrap();
-                let callable_params = iter.next().unwrap();
-                let body = iter.next().unwrap();
-                Func(id.parse_to(), callable_params.parse_to(), body.parse_to())
+                let id = iter.next().unwrap().parse_to();
+                let callable_params = iter.next().unwrap().parse_to();
+                let body = iter.next().unwrap().parse_to();
+                Func(id, callable_params, body)
             }
 
             Rule::struct_decl => {
                 let mut iter = self.into_inner().into_iter();
-                let id = iter.next().unwrap();
+                let id = iter.next().unwrap().parse_to();
                 let extends = match iter.peek().map(|p| p.as_rule()) {
                     Some(Rule::expr) => iter.next().map(|expr| expr.parse_to()),
                     _ => None,
                 };
-                let body = iter
-                    .flat_map(|item| item.into_inner())
-                    .map(|decl| decl.parse_to())
-                    .collect();
-                Struct(id.parse_to(), extends, body)
+                let body = iter.next().unwrap().parse_to();
+                Struct(id, extends, body)
             }
 
-            Rule::namespace_decl => unimplemented!(),
-            Rule::block_decl => unimplemented!(),
-            Rule::if_stmt => unimplemented!(),
-            Rule::while_stmt => unimplemented!(),
-            Rule::switch_stmt => unimplemented!(),
-            Rule::for_stmt => unimplemented!(),
-            Rule::for_each_stmt => unimplemented!(),
-            Rule::loop_until_stmt => unimplemented!(),
+            Rule::namespace_decl => {
+                let mut iter = self.into_inner().into_iter();
+                let id = iter.next().unwrap().parse_to();
+                let body = iter.next().unwrap().parse_to();
+                Namespace(id, body)
+            }
+
+            Rule::block_decl => Block(fst!(self).unwrap().parse_to()),
+
+            Rule::if_stmt => {
+                let mut iter = self.into_inner().into_iter();
+                let cond = iter.next().unwrap().parse_to();
+                let t = iter.next().unwrap().parse_to();
+                let f = iter.next().map(|f| f.parse_to());
+                If(cond, t, f)
+            }
+
+            Rule::while_stmt => {
+                let mut iter = self.into_inner().into_iter();
+                let cond = iter.next().unwrap();
+                let body = iter.next().unwrap();
+                While(cond.parse_to(), body.parse_to())
+            }
+
+            Rule::switch_stmt => {
+                let mut iter = self.into_inner().into_iter();
+                let expr = iter.next().unwrap().parse_to();
+                let cases = iter.map(|case| case.parse_to()).collect();
+                Switch(expr, cases)
+            }
+
+            Rule::for_stmt => {
+                let mut iter = self.into_inner().into_iter();
+                let id = iter.next().unwrap().parse_to();
+                let init = iter.next().unwrap().parse_to();
+                let cond = iter.next().unwrap().parse_to();
+                let post = iter.next().unwrap().parse_to();
+                let body = iter.next().unwrap().parse_to();
+                For(id, init, cond, post, body)
+            }
+
+            Rule::for_each_stmt => {
+                let mut iter = self.into_inner().into_iter();
+                let id = iter.next().unwrap().parse_to();
+                let expr = iter.next().unwrap().parse_to();
+                let body = iter.next().unwrap().parse_to();
+                ForEach(id, expr, body)
+            }
+
+            Rule::loop_until_stmt => {
+                let mut iter = self.into_inner().into_iter();
+                let body = iter.next().unwrap().parse_to();
+                let cond = iter.next().map(|expr| expr.parse_to());
+                Loop(cond, body)
+            }
+
             Rule::loop_control => fst!(self).unwrap().parse_to(),
             Rule::break_ => Break,
             Rule::continue_ => Continue,
-            Rule::try_stmt => unimplemented!(),
-            Rule::expr_stmt => unimplemented!(),
+
+            Rule::try_stmt => {
+                let mut iter = self.into_inner().into_iter();
+                let try_body = iter.next().unwrap().parse_to();
+                let id = iter.next().unwrap().parse_to();
+                let catch_body = iter.next().unwrap().parse_to();
+                Try(try_body, id, catch_body)
+            }
+
+            Rule::expr_stmt => {
+                let mut iter = self.into_inner().into_iter();
+                let first = iter.next().unwrap();
+                match first.as_rule() {
+                    Rule::primary_expr => {
+                        let prefix = first.parse_to();
+                        match iter.peek().unwrap().as_rule() {
+                            Rule::inc_dec =>
+                                ExprStmt(Unary(iter.next().unwrap().parse_to(),
+                                               Box::new(prefix))),
+
+                            Rule::primary_postfix =>
+                                ExprStmt(iter.flat_map(|postfix| postfix.into_inner())
+                                    .fold(prefix, build_primary_expr)),
+
+                            _ => unreachable!(),
+                        }
+                    }
+
+                    Rule::inc_dec => {
+                        let op = match first.parse_to() {
+                            Op::Inc(_) => Op::Inc(OpFix::Prefix),
+                            Op::Dec(_) => Op::Dec(OpFix::Prefix),
+                            _ => unreachable!(),
+                        };
+                        ExprStmt(Unary(op, Box::new(iter.next().unwrap().parse_to())))
+                    }
+
+                    _ => unreachable!(),
+                }
+            }
 
             _ => unreachable!()
         }
@@ -479,7 +563,40 @@ impl ParseTo<Vec<Stmt>> for Pair<'_, Rule> {
                 .map(|stmt| stmt.parse_to())
                 .collect(),
 
-            _ => unimplemented!(),
+            Rule::struct_body => self.into_inner().into_iter()
+                .map(|decl| decl.parse_to())
+                .collect(),
+
+            Rule::for_body => {
+                let first = fst!(self).unwrap();
+                match first.as_rule() {
+                    Rule::stmt => vec![first.parse_to()],
+                    Rule::common_body => first.parse_to(),
+                    _ => unreachable!(),
+                }
+            }
+
+            _ => unreachable!()
+        }
+    }
+}
+
+impl ParseTo<Case> for Pair<'_, Rule> {
+    fn parse_to(self) -> Case {
+        match self.as_rule() {
+            Rule::switch_case => fst!(self).unwrap().parse_to(),
+            Rule::sth_case => {
+                let mut iter = self.into_inner().into_iter();
+                let expr = iter.next().unwrap().parse_to();
+                let body = iter.next()
+                    .map(|body| body.parse_to())
+                    .unwrap_or_default();
+                Sth(expr, body)
+            }
+            Rule::default_case => {
+                Dft(fst!(self).map(|body| body.parse_to()).unwrap_or_default())
+            }
+            _ => unreachable!(),
         }
     }
 }

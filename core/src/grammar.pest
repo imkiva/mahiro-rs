@@ -52,8 +52,8 @@ namespace_decl = { "namespace" ~ id ~ common_body ~ "end" }
 
 // struct
 struct_kw = _ { "struct" | "class" }
-struct_decl = { struct_kw ~ id ~ ("extends" ~ expr)? ~ struct_item* ~ "end" }
-struct_item = { var_decl | func_decl }
+struct_decl = { struct_kw ~ id ~ ("extends" ~ expr)? ~ struct_body ~ "end" }
+struct_body = { (var_decl | func_decl)* }
 
 common_body = { stmt* }
 
@@ -70,16 +70,16 @@ if_stmt = { "if" ~ expr ~ SEMI? ~ common_body ~ SEMI? ~ ("else" ~ common_body)? 
 
 // switch
 switch_stmt = { "switch" ~ expr ~ switch_case* ~ "end" }
-switch_case = { "default" ~ SEMI? ~ ("end" | common_body ~ "end")
-              | "case" ~ expr ~ SEMI? ~ ("end" | common_body ~ "end")
-              }
+switch_case = { default_case | sth_case }
+sth_case = { "case" ~ expr ~ SEMI? ~ ("end" | common_body ~ "end") }
+default_case = { "default" ~ SEMI? ~ ("end" | common_body ~ "end") }
 
 // while
 while_stmt = { "while" ~ expr ~ common_body ~ "end" }
 
 // loop
 loop_until_stmt = { "loop" ~ common_body ~ loop_until_end }
-loop_until_end = { "until" ~ expr | "end" }
+loop_until_end = _ { "until" ~ expr | "end" }
 
 // break/continue
 loop_control = { break_ | continue_ }
@@ -89,8 +89,8 @@ continue_ = { "continue" }
 // for
 for_stmt = { "for" ~ id ~ for_header ~ for_body }
 for_each_stmt = { "foreach" ~ id ~ for_each_header ~ for_body }
-for_header = { "=" ~ expr ~ "," ~ expr ~ "," ~ expr }
-for_each_header = { "in" ~ expr }
+for_header = _ { "=" ~ expr ~ "," ~ expr ~ "," ~ expr }
+for_each_header = _ { "in" ~ expr }
 for_body = { "do" ~ stmt | common_body ~ "end" }
 
 // block

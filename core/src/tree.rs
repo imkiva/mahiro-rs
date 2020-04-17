@@ -117,8 +117,8 @@ pub enum VarInit {
 
 #[derive(Debug, PartialOrd, PartialEq, Clone)]
 pub enum Case {
-    Sth(Expr),
-    Default(Body),
+    Sth(Expr, Body),
+    Dft(Body),
 }
 
 #[derive(Debug, PartialOrd, PartialEq, Clone)]
