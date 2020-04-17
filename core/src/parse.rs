@@ -7,7 +7,7 @@ use pest::error::Error;
 use pest::error::ErrorVariant;
 use crate::tree::Entry::{HeaderEntry, StmtEntry};
 use crate::tree::Header::{Using, Import, Package};
-use crate::tree::Stmt::{Break, Continue, Throw, Return, VarList, Var};
+use crate::tree::Stmt::{Break, Continue, Throw, Return, VarList, Var, Func, Struct};
 use crate::tree::Expr::{Literal, Ternary, Question, Binary, Unary, Id, Lambda, Group, Apply, Assign};
 use crate::tree::Lit::{Null, Number, Bool, Str, Char, Array};
 use crate::tree::Param::{Normal, Varargs};
@@ -431,8 +431,28 @@ impl ParseTo<Stmt> for Pair<'_, Rule> {
                 }
             }
 
-            Rule::func_decl => unimplemented!(),
-            Rule::struct_decl => unimplemented!(),
+            Rule::func_decl => {
+                let mut iter = self.into_inner().into_iter();
+                let id = iter.next().unwrap();
+                let callable_params = iter.next().unwrap();
+                let body = iter.next().unwrap();
+                Func(id.parse_to(), callable_params.parse_to(), body.parse_to())
+            }
+
+            Rule::struct_decl => {
+                let mut iter = self.into_inner().into_iter();
+                let id = iter.next().unwrap();
+                let extends = match iter.peek().map(|p| p.as_rule()) {
+                    Some(Rule::expr) => iter.next().map(|expr| expr.parse_to()),
+                    _ => None,
+                };
+                let body = iter
+                    .flat_map(|item| item.into_inner())
+                    .map(|decl| decl.parse_to())
+                    .collect();
+                Struct(id.parse_to(), extends, body)
+            }
+
             Rule::namespace_decl => unimplemented!(),
             Rule::block_decl => unimplemented!(),
             Rule::if_stmt => unimplemented!(),
@@ -448,6 +468,18 @@ impl ParseTo<Stmt> for Pair<'_, Rule> {
             Rule::expr_stmt => unimplemented!(),
 
             _ => unreachable!()
+        }
+    }
+}
+
+impl ParseTo<Vec<Stmt>> for Pair<'_, Rule> {
+    fn parse_to(self) -> Vec<Stmt> {
+        match self.as_rule() {
+            Rule::common_body => self.into_inner().into_iter()
+                .map(|stmt| stmt.parse_to())
+                .collect(),
+
+            _ => unimplemented!(),
         }
     }
 }

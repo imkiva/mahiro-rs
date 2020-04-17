@@ -89,7 +89,7 @@ pub enum Stmt {
     VarList(Vec<VarInit>),
     Func(Name, Vec<Param>, Body),
     Namespace(Name, Body),
-    Struct(Name, Option<Name>, Body),
+    Struct(Name, Option<Expr>, Body),
     Block(Body),
 
     // common statements

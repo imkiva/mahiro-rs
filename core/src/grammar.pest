@@ -51,7 +51,7 @@ func_decl = { "function" ~ id ~ callable_params ~ "override"? ~ common_body ~ "e
 namespace_decl = { "namespace" ~ id ~ common_body ~ "end" }
 
 // struct
-struct_kw = { "struct" | "class" }
+struct_kw = _ { "struct" | "class" }
 struct_decl = { struct_kw ~ id ~ ("extends" ~ expr)? ~ struct_item* ~ "end" }
 struct_item = { var_decl | func_decl }
 
