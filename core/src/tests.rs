@@ -4,8 +4,8 @@ mod parse {
     use crate::tree::Header::{Import, Using, Package};
     use crate::tree::{Program, Op, OpFix};
     use crate::tree::Entry::{HeaderEntry, StmtEntry};
-    use crate::tree::Stmt::{Throw, Var, VarList};
-    use crate::tree::Expr::{Id, Literal, Unary, Lambda, Binary, Apply, Question, Ternary};
+    use crate::tree::Stmt::{Throw, Var, VarList, ExprStmt};
+    use crate::tree::Expr::{Id, Literal, Unary, Lambda, Binary, Apply, Question, Ternary, Assign};
     use crate::tree::Lit::{Null, Number, Bool, Str, Char, Array, Pair};
     use crate::tree::Param::{Normal, Varargs};
     use crate::tree::VarInit::{Simple, Structured};
@@ -358,6 +358,24 @@ mod parse {
                 )),
                 Box::new(Literal(Number(4.0))))))
             ),
+        ]);
+    }
+
+    #[test]
+    fn parse_expr_stmt() {
+        let prog = parse("\
+        a++\n\
+        ++a\n\
+        exit()\n\
+        a = 100\n"
+        );
+        assert_eq!(prog, vec![
+            StmtEntry(ExprStmt(Unary(Op::Inc(OpFix::Postfix), Box::new(Id("a".into()))))),
+            StmtEntry(ExprStmt(Unary(Op::Inc(OpFix::Prefix), Box::new(Id("a".into()))))),
+            StmtEntry(ExprStmt(Apply(Box::new(Id("exit".into())), vec![]))),
+            StmtEntry(ExprStmt(Assign(Op::Assign,
+                                      Box::new(Id("a".into())),
+                                      Box::new(Literal(Number(100.0)))))),
         ]);
     }
 

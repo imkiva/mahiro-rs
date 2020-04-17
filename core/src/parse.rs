@@ -530,7 +530,7 @@ impl ParseTo<Stmt> for Pair<'_, Rule> {
                 let mut iter = self.into_inner().into_iter();
                 let first = iter.next().unwrap();
                 match first.as_rule() {
-                    Rule::primary_expr => {
+                    Rule::primary_prefix => {
                         let prefix = first.parse_to();
                         match iter.peek().unwrap().as_rule() {
                             Rule::inc_dec =>
