@@ -75,12 +75,12 @@ impl ParseTo<Expr> for Pair<'_, Rule> {
             }
 
             // binary operators
-            Rule::logic_or_expr
-            | Rule::logic_and_expr
-            | Rule::relation_expr
-            | Rule::add_expr
-            | Rule::mul_expr
-            | Rule::pow_expr => {
+            Rule::logic_or_expr |
+            Rule::logic_and_expr |
+            Rule::relation_expr |
+            Rule::add_expr |
+            Rule::mul_expr |
+            Rule::pow_expr => {
                 let mut exprs = VecDeque::new();
                 let mut ops = Vec::new();
 
