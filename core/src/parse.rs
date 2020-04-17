@@ -34,6 +34,24 @@ trait ParseTo<T> {
     fn parse_to(self) -> T;
 }
 
+//////////////////////////////// Program
+
+impl ParseTo<Program> for Pairs<'_, Rule> {
+    fn parse_to(self) -> Program {
+        self.into_iter()
+            .flat_map(|item| item.into_inner())
+            .filter_map(|node| match node.as_rule() {
+                Rule::header => Some(HeaderEntry(node.parse_to())),
+                Rule::stmt => Some(StmtEntry(node.parse_to())),
+                Rule::EOI => None,
+                _ => unreachable!(),
+            })
+            .collect()
+    }
+}
+
+//////////////////////////////// Expression
+
 impl ParseTo<Expr> for Pair<'_, Rule> {
     fn parse_to(self) -> Expr {
         match self.as_rule() {
@@ -178,63 +196,6 @@ impl ParseTo<Expr> for Pair<'_, Rule> {
     }
 }
 
-
-impl ParseTo<Stmt> for Pair<'_, Rule> {
-    fn parse_to(self) -> Stmt {
-        match self.as_rule() {
-            Rule::stmt => fst!(self).unwrap().parse_to(),
-            Rule::cross_line_stmt => fst!(self).unwrap().parse_to(),
-            Rule::primary_stmt => fst!(self).unwrap().parse_to(),
-            Rule::throw_stmt => Throw(fst!(self).unwrap().parse_to()),
-            Rule::return_stmt => Return(fst!(self).map(|expr| expr.parse_to())),
-
-            // variable declaration
-            Rule::var_decl => {
-                let mut vars: Vec<Pair<Rule>> = self.into_inner().into_iter().collect();
-                if vars.len() == 1 {
-                    vars.pop().unwrap().parse_to()
-                } else {
-                    VarList(vars.into_iter().map(|init|
-                        match init.parse_to() {
-                            Stmt::Var(init) => init,
-                            _ => unreachable!()
-                        })
-                        .collect())
-                }
-            }
-            // sub-rule of var_decl
-            Rule::var_init => {
-                let mut iter = self.into_inner().into_iter();
-                let first = iter.next().unwrap();
-                let expr = iter.next().unwrap();
-                match first.as_rule() {
-                    Rule::id => Var(Simple(first.parse_to(), expr.parse_to())),
-                    Rule::params => Var(Structured(first.parse_to(), expr.parse_to())),
-                    _ => unreachable!(),
-                }
-            }
-
-            Rule::func_decl => unimplemented!(),
-            Rule::struct_decl => unimplemented!(),
-            Rule::namespace_decl => unimplemented!(),
-            Rule::block_decl => unimplemented!(),
-            Rule::if_stmt => unimplemented!(),
-            Rule::while_stmt => unimplemented!(),
-            Rule::switch_stmt => unimplemented!(),
-            Rule::for_stmt => unimplemented!(),
-            Rule::for_each_stmt => unimplemented!(),
-            Rule::loop_until_stmt => unimplemented!(),
-            Rule::loop_control => fst!(self).unwrap().parse_to(),
-            Rule::break_ => Break,
-            Rule::continue_ => Continue,
-            Rule::try_stmt => unimplemented!(),
-            Rule::expr_stmt => unimplemented!(),
-
-            _ => unreachable!()
-        }
-    }
-}
-
 impl ParseTo<Header> for Pair<'_, Rule> {
     fn parse_to(self) -> Header {
         let child = fst!(self).unwrap();
@@ -365,20 +326,6 @@ impl ParseTo<Op> for Pair<'_, Rule> {
     }
 }
 
-impl ParseTo<Program> for Pairs<'_, Rule> {
-    fn parse_to(self) -> Program {
-        self.into_iter()
-            .flat_map(|item| item.into_inner())
-            .filter_map(|node| match node.as_rule() {
-                Rule::header => Some(HeaderEntry(node.parse_to())),
-                Rule::stmt => Some(StmtEntry(node.parse_to())),
-                Rule::EOI => None,
-                _ => unreachable!(),
-            })
-            .collect()
-    }
-}
-
 fn unescape(input: &str) -> String {
     let mut str = String::with_capacity(input.len());
     let mut escape = false;
@@ -444,6 +391,64 @@ fn build_primary_expr(prefix: Expr, postfix: Pair<Rule>) -> Expr {
         Rule::flatten => Unary(Op::Flatten, Box::new(prefix)),
 
         _ => unreachable!(),
+    }
+}
+
+//////////////////////////////// Statement
+
+impl ParseTo<Stmt> for Pair<'_, Rule> {
+    fn parse_to(self) -> Stmt {
+        match self.as_rule() {
+            Rule::stmt => fst!(self).unwrap().parse_to(),
+            Rule::cross_line_stmt => fst!(self).unwrap().parse_to(),
+            Rule::primary_stmt => fst!(self).unwrap().parse_to(),
+            Rule::throw_stmt => Throw(fst!(self).unwrap().parse_to()),
+            Rule::return_stmt => Return(fst!(self).map(|expr| expr.parse_to())),
+
+            // variable declaration
+            Rule::var_decl => {
+                let mut vars: Vec<Pair<Rule>> = self.into_inner().into_iter().collect();
+                if vars.len() == 1 {
+                    vars.pop().unwrap().parse_to()
+                } else {
+                    VarList(vars.into_iter().map(|init|
+                        match init.parse_to() {
+                            Stmt::Var(init) => init,
+                            _ => unreachable!()
+                        })
+                        .collect())
+                }
+            }
+            // sub-rule of var_decl
+            Rule::var_init => {
+                let mut iter = self.into_inner().into_iter();
+                let first = iter.next().unwrap();
+                let expr = iter.next().unwrap();
+                match first.as_rule() {
+                    Rule::id => Var(Simple(first.parse_to(), expr.parse_to())),
+                    Rule::params => Var(Structured(first.parse_to(), expr.parse_to())),
+                    _ => unreachable!(),
+                }
+            }
+
+            Rule::func_decl => unimplemented!(),
+            Rule::struct_decl => unimplemented!(),
+            Rule::namespace_decl => unimplemented!(),
+            Rule::block_decl => unimplemented!(),
+            Rule::if_stmt => unimplemented!(),
+            Rule::while_stmt => unimplemented!(),
+            Rule::switch_stmt => unimplemented!(),
+            Rule::for_stmt => unimplemented!(),
+            Rule::for_each_stmt => unimplemented!(),
+            Rule::loop_until_stmt => unimplemented!(),
+            Rule::loop_control => fst!(self).unwrap().parse_to(),
+            Rule::break_ => Break,
+            Rule::continue_ => Continue,
+            Rule::try_stmt => unimplemented!(),
+            Rule::expr_stmt => unimplemented!(),
+
+            _ => unreachable!()
+        }
     }
 }
 
