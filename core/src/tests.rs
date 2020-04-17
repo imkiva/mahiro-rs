@@ -4,11 +4,12 @@ mod parse {
     use crate::tree::Header::{Import, Using, Package};
     use crate::tree::{Program, Op, OpFix, Stmt};
     use crate::tree::Entry::{HeaderEntry, StmtEntry};
-    use crate::tree::Stmt::{Throw, Var, VarList, ExprStmt, Func, Namespace, Block, Struct, Return};
+    use crate::tree::Stmt::{Throw, Var, VarList, ExprStmt, Func, Namespace, Block, Struct, Return, Try};
     use crate::tree::Expr::{Id, Literal, Unary, Lambda, Binary, Apply, Question, Ternary, Assign};
     use crate::tree::Lit::{Null, Number, Bool, Str, Char, Array, Pair};
     use crate::tree::Param::{Normal, Varargs};
     use crate::tree::VarInit::{Simple, Structured};
+    use crate::tree::Op::Access;
 
     #[test]
     fn works() {
@@ -562,6 +563,32 @@ mod parse {
             StmtEntry(Func("jiegebuyao".into(), vec![], vec![
                 Return(None),
             ]))
+        ]);
+    }
+
+    #[test]
+    fn parse_try_catch() {
+        let prog = parse("\
+        try\n\
+            get()\n\
+        catch e\n\
+            e.printStackTrace()\n\
+        end");
+        assert_eq!(prog, vec![
+            StmtEntry(Try(
+                vec![
+                    ExprStmt(Apply(Box::new(Id("get".into())), vec![]))
+                ],
+                "e".into(),
+                vec![
+                    ExprStmt(Apply(
+                        Box::new(Binary(
+                            Op::Access,
+                            Box::new(Id("e".into())),
+                            Box::new(Id("printStackTrace".into())))),
+                        vec![]))
+                ],
+            ))
         ]);
     }
 
