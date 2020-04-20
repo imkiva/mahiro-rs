@@ -4,7 +4,7 @@ use libc::c_char;
 use libc::c_uchar;
 use libc::size_t;
 
-use crate::parse::CsParser;
+use crate::parse::{CsParser, CompileError};
 use crate::parse::CompileResult;
 use crate::parse::ParseError;
 
@@ -56,6 +56,11 @@ impl CCompileResult {
         }
     }
 
+    pub fn from_compile_error(file: &str, err: CompileError) -> CCompileResult {
+        let err = err.0;
+        CCompileResult::from_error(&format!("{}", err.with_path(file)))
+    }
+
     pub fn from_code(code: &[u8]) -> CCompileResult {
         let len = code.len();
         let buffer = malloc(len) as *mut c_uchar;
@@ -93,9 +98,10 @@ fn to_rust_str<'a>(cstr: *const c_char) -> &'a str {
 }
 
 #[no_mangle]
-pub extern "C" fn compile_source(src: *const c_char) -> CCompileResult {
+pub extern "C" fn compile_source(file: *const c_char, src: *const c_char) -> CCompileResult {
     let result = catch_unwind(|| {
-        let str = to_rust_str(src);
+        let file = to_rust_str(file);
+        let src = to_rust_str(src);
         // TODO: codegen
         CCompileResult::from_error("unimplemented")
     });
