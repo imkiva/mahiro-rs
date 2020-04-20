@@ -6,5 +6,7 @@ pub mod parse;
 pub mod tree;
 pub mod pe;
 
+mod capi;
+
 #[cfg(test)]
 mod tests;

@@ -1,5 +1,5 @@
 [package]
-name = "parser"
+name = "compiler"
 version = "0.1.0"
 authors = ["imkiva <imkiva@icloud.com>"]
 edition = "2018"
@@ -10,7 +10,8 @@ edition = "2018"
 pest = "2.1.3"
 pest_derive = "2.1.0"
 lazy_static = "1.4.0"
+libc = "0.2.69"
 
 [lib]
 crate-type = ["staticlib", "rlib"]
-name = "covscript_parser"
+name = "covscript_compiler"

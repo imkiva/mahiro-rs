@@ -34,10 +34,20 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "08c48aae112d48ed9f069b33538ea9e3e90aa263cfa3d1c24309612b1f7472de"
 
 [[package]]
+name = "compiler"
+version = "0.1.0"
+dependencies = [
+ "lazy_static",
+ "libc",
+ "pest",
+ "pest_derive",
+]
+
+[[package]]
 name = "covscript-rs"
 version = "0.1.0"
 dependencies = [
- "parser",
+ "compiler",
 ]
 
 [[package]]
@@ -71,6 +81,12 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "e2abad23fbc42b3700f2f279844dc832adb2b2eb069b2df918f455c4e18cc646"
 
 [[package]]
+name = "libc"
+version = "0.2.69"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "99e85c08494b21a9054e7fe1374a732aeadaff3980b6990b94bfd3a70f690005"
+
+[[package]]
 name = "maplit"
 version = "1.0.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -81,15 +97,6 @@ name = "opaque-debug"
 version = "0.2.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "2839e79665f131bdb5782e51f2c6c9599c133c6098982a54c794358bf432529c"
-
-[[package]]
-name = "parser"
-version = "0.1.0"
-dependencies = [
- "lazy_static",
- "pest",
- "pest_derive",
-]
 
 [[package]]
 name = "pest"
