@@ -13,9 +13,16 @@ const ERROR_KIND_PARSE: i32 = 1;
 const ERROR_KIND_MALLOC: i32 = 2;
 
 #[repr(C)]
+pub enum CCompileResultKind {
+    Success,
+    ParseError,
+    MallocError,
+}
+
+#[repr(C)]
 pub struct CCompileResult {
     /// indicate compile result variant
-    error_occurred: i32,
+    error_occurred: CCompileResultKind,
 
     /// store the error message.
     /// this is malloc-ed, the caller is
@@ -39,7 +46,7 @@ impl CCompileResult {
 
         if buffer.is_null() {
             return CCompileResult {
-                error_occurred: ERROR_KIND_MALLOC,
+                error_occurred: CCompileResultKind::MallocError,
                 error_message: std::ptr::null(),
                 compiled_code: std::ptr::null(),
                 compiled_code_length: 0,
@@ -49,7 +56,7 @@ impl CCompileResult {
         unsafe { std::ptr::copy(msg.as_ptr() as *const c_char, buffer, len) }
 
         CCompileResult {
-            error_occurred: ERROR_KIND_PARSE,
+            error_occurred: CCompileResultKind::ParseError,
             error_message: buffer,
             compiled_code: std::ptr::null(),
             compiled_code_length: 0,
@@ -67,7 +74,7 @@ impl CCompileResult {
 
         if buffer.is_null() {
             return CCompileResult {
-                error_occurred: ERROR_KIND_MALLOC,
+                error_occurred: CCompileResultKind::MallocError,
                 error_message: std::ptr::null(),
                 compiled_code: std::ptr::null(),
                 compiled_code_length: 0,
@@ -77,7 +84,7 @@ impl CCompileResult {
         unsafe { std::ptr::copy(code.as_ptr() as *const c_uchar, buffer, len) }
 
         CCompileResult {
-            error_occurred: ERROR_KIND_NO_ERROR,
+            error_occurred: CCompileResultKind::Success,
             error_message: std::ptr::null(),
             compiled_code: buffer,
             compiled_code_length: len,
