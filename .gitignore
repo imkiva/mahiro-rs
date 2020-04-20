@@ -36,4 +36,4 @@
 .idea/
 cmake-*
 
-/core/target/
+/parser/target/

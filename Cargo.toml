@@ -1,10 +1,10 @@
 [package]
 name = "covscript-rs"
 version = "0.1.0"
-authors = ["imkiva <libkernelpanic@gmail.com>"]
+authors = ["imkiva <imkiva@icloud.com>"]
 edition = "2018"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-core = { path = 'core' }
+parser = { path = 'parser' }

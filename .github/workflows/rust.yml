@@ -17,5 +17,5 @@ jobs:
       - uses: actions/checkout@v2
       - name: Build
         run: cargo build --verbose
-      - name: Run core tests
-        run: cargo test --package core --verbose
+      - name: Run parser tests
+        run: cargo test --package parser --verbose
