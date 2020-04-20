@@ -8,10 +8,6 @@ use crate::parse::{CsParser, CompileError};
 use crate::parse::CompileResult;
 use crate::parse::ParseError;
 
-const ERROR_KIND_NO_ERROR: i32 = 0;
-const ERROR_KIND_PARSE: i32 = 1;
-const ERROR_KIND_MALLOC: i32 = 2;
-
 #[repr(C)]
 pub enum CCompileResultKind {
     Success,
