@@ -2,7 +2,8 @@ use std::cmp::Ordering;
 
 pub type Line = usize;
 pub type Col = usize;
-pub type Loc = (Line, Col);
+pub type Pos = (Line, Col);
+pub type Loc = (Pos, Pos);
 
 #[derive(Debug, Clone)]
 pub struct Ident {
@@ -26,7 +27,8 @@ impl Ident {
     pub fn new(span: pest::Span, text: &str) -> Self {
         Ident {
             text: text.to_string(),
-            loc: Some((span.start(), span.end())),
+            loc: Some((span.start_pos().line_col(),
+                       span.end_pos().line_col())),
         }
     }
 

@@ -824,6 +824,21 @@ mod parse {
         ]);
     }
 
+    #[test]
+    fn with_location() {
+        let prog = parse("var a = b");
+        let a = prog.get(0).unwrap();
+
+        match a {
+            StmtEntry(Var(Simple(Ident { text: _, loc: Some(a) },
+                                 Id(Ident { text: _, loc: Some(b) })))) => {
+                assert_eq!(a.clone(), ((1, 5), (1, 6)));
+                assert_eq!(b.clone(), ((1, 9), (1, 10)));
+            }
+            _ => unreachable!()
+        }
+    }
+
     fn parse(input: &str) -> Program {
         CsParser::ast(input).expect("Compile Error")
     }
