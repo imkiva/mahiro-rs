@@ -155,7 +155,7 @@ assign = { assign_op ~ expr }
 assign_op = { "=" | "+=" | "-=" | "*=" | "/=" | "%=" | "^=" }
 flatten = { "..." }
 
-lambda = { "[]" ~ callable_params ~ "->" ~ expr }
+lambda = { "[" ~ params? ~ "]" ~ callable_params ~ "->" ~ expr }
 
 literal = { number_lit
           | bool_lit

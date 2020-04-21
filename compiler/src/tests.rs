@@ -2,14 +2,13 @@
 mod parse {
     use crate::parse::*;
     use crate::tree::Header::{Import, Using, Package};
-    use crate::tree::{Program, Op, Stmt};
+    use crate::tree::{Program, Op};
     use crate::tree::Entry::{HeaderEntry, StmtEntry};
     use crate::tree::Stmt::{Throw, Var, VarList, ExprStmt, Func, Namespace, Block, Struct, Return, Try, If, While, Loop, Break, Continue, For, ForEach};
     use crate::tree::Expr::{Id, Literal, Unary, Lambda, Binary, Apply, Question, Ternary, Assign};
     use crate::tree::Lit::{Null, Number, Bool, Str, Char, Array, Pair};
     use crate::tree::Param::{Normal, Varargs};
     use crate::tree::VarInit::{Simple, Structured};
-    use crate::tree::Op::Access;
 
     #[test]
     fn works() {
@@ -249,6 +248,7 @@ mod parse {
             "var id = [](a) -> a");
         assert_eq!(prog, vec![
             StmtEntry(Var(Simple("id".into(), Lambda(
+                None,
                 vec![Normal("a".into())],
                 Box::new(Id("a".into())),
             )))),
@@ -261,6 +261,7 @@ mod parse {
             "var format = [](fmt, ...arg) -> echo(fmt, arg...)");
         assert_eq!(prog, vec![
             StmtEntry(Var(Simple("format".into(), Lambda(
+                None,
                 vec![
                     Normal("fmt".into()),
                     Varargs("arg".into()),
@@ -282,6 +283,7 @@ mod parse {
             "var show = [](a) -> system.out.println(a)");
         assert_eq!(prog, vec![
             StmtEntry(Var(Simple("show".into(), Lambda(
+                None,
                 vec![
                     Normal("a".into()),
                 ],
@@ -299,6 +301,60 @@ mod parse {
                         Id("a".into()),
                     ],
                 )),
+            )))),
+        ]);
+    }
+
+    #[test]
+    fn parse_lambda_with_single_capture() {
+        let prog = parse("\
+        var lam = [lam]() -> lam\n\
+        ");
+        assert_eq!(prog, vec![
+            StmtEntry(Var(Simple("lam".into(), Lambda(
+                Some(vec!["lam".into()]),
+                vec![],
+                Box::new(Id("lam".into())),
+            )))),
+        ]);
+    }
+
+    #[test]
+    fn parse_lambda_with_captures() {
+        let prog = parse("\
+        var lam = [a, b, c]() -> lam\n\
+        ");
+        assert_eq!(prog, vec![
+            StmtEntry(Var(Simple("lam".into(), Lambda(
+                Some(vec![
+                    "a".into(),
+                    "b".into(),
+                    "c".into(),
+                ]),
+                vec![],
+                Box::new(Id("lam".into())),
+            )))),
+        ]);
+    }
+
+    #[test]
+    fn parse_lambda_with_captures_and_args() {
+        let prog = parse("\
+        var lam = [a, b, c](x, y, z) -> lam\n\
+        ");
+        assert_eq!(prog, vec![
+            StmtEntry(Var(Simple("lam".into(), Lambda(
+                Some(vec![
+                    "a".into(),
+                    "b".into(),
+                    "c".into(),
+                ]),
+                vec![
+                    Normal("x".into()),
+                    Normal("y".into()),
+                    Normal("z".into()),
+                ],
+                Box::new(Id("lam".into())),
             )))),
         ]);
     }

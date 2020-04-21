@@ -20,7 +20,7 @@ pub enum Param {
 #[derive(Debug, PartialOrd, PartialEq, Clone)]
 pub enum Expr {
     Literal(Lit),
-    Lambda(Vec<Param>, Box<Expr>),
+    Lambda(Option<Vec<Name>>, Vec<Param>, Box<Expr>),
     Id(Name),
     Group(Vec<Expr>),
 

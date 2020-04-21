@@ -188,9 +188,13 @@ impl ParseTo<Expr> for Pair<'_, Rule> {
             // sub-rule of Rule::primary_prefix
             Rule::lambda => {
                 let mut iter = self.into_inner().into_iter();
+                let capture = match iter.peek().unwrap().as_rule() {
+                    Rule::params => Some(iter.next().unwrap().parse_to()),
+                    _ => None,
+                };
                 let callable_params = iter.next().unwrap();
                 let expr = iter.next().unwrap();
-                Lambda(callable_params.parse_to(), Box::new(expr.parse_to()))
+                Lambda(capture, callable_params.parse_to(), Box::new(expr.parse_to()))
             }
 
             _ => unreachable!("run out of expr compiler"),
