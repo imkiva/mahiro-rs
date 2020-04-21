@@ -2,7 +2,7 @@
 mod parse {
     use crate::parse::*;
     use crate::tree::Header::{Import, Using, Package};
-    use crate::tree::{Program, Op, OpFix, Stmt};
+    use crate::tree::{Program, Op, Stmt};
     use crate::tree::Entry::{HeaderEntry, StmtEntry};
     use crate::tree::Stmt::{Throw, Var, VarList, ExprStmt, Func, Namespace, Block, Struct, Return, Try, If, While, Loop, Break, Continue, For, ForEach};
     use crate::tree::Expr::{Id, Literal, Unary, Lambda, Binary, Apply, Question, Ternary, Assign};
@@ -304,22 +304,6 @@ mod parse {
     }
 
     #[test]
-    fn parse_pre_inc_dec() {
-        let prog = parse(
-            "var a = ++x\n\
-            var b = y++\n\
-            var c = w--\n\
-            var d = --w\n\
-            ");
-        assert_eq!(prog, vec![
-            StmtEntry(Var(Simple("a".into(), Unary(Op::Inc(OpFix::Prefix), Box::new(Id("x".into())))))),
-            StmtEntry(Var(Simple("b".into(), Unary(Op::Inc(OpFix::Postfix), Box::new(Id("y".into())))))),
-            StmtEntry(Var(Simple("c".into(), Unary(Op::Dec(OpFix::Postfix), Box::new(Id("w".into())))))),
-            StmtEntry(Var(Simple("d".into(), Unary(Op::Dec(OpFix::Prefix), Box::new(Id("w".into())))))),
-        ]);
-    }
-
-    #[test]
     fn parse_question_expr() {
         let prog = parse(
             "var r = a ? b");
@@ -365,14 +349,10 @@ mod parse {
     #[test]
     fn parse_expr_stmt() {
         let prog = parse("\
-        a++\n\
-        ++a\n\
         exit()\n\
         a = 100\n"
         );
         assert_eq!(prog, vec![
-            StmtEntry(ExprStmt(Unary(Op::Inc(OpFix::Postfix), Box::new(Id("a".into()))))),
-            StmtEntry(ExprStmt(Unary(Op::Inc(OpFix::Prefix), Box::new(Id("a".into()))))),
             StmtEntry(ExprStmt(Apply(Box::new(Id("exit".into())), vec![]))),
             StmtEntry(ExprStmt(Assign(Op::Assign,
                                       Box::new(Id("a".into())),
@@ -755,7 +735,7 @@ mod parse {
     fn parse_for() {
         let prog = parse("\
         var sum = 0\n\
-        for i = 0, i < 100, ++i\n\
+        for i = 0, i < 100, i += 1\n\
             sum += i\n\
         end");
         assert_eq!(prog, vec![
@@ -764,7 +744,7 @@ mod parse {
                 "i".into(),
                 Literal(Number(0.0)),
                 Binary(Op::Lt, Box::new(Id("i".into())), Box::new(Literal(Number(100.0)))),
-                Unary(Op::Inc(OpFix::Prefix), Box::new(Id("i".into()))),
+                Assign(Op::AddAss, Box::new(Id("i".into())), Box::new(Literal(Number(1.0)))),
                 vec![
                     ExprStmt(Assign(Op::AddAss,
                                     Box::new(Id("sum".into())),

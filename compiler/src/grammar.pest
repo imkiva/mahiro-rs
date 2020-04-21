@@ -33,8 +33,7 @@ primary_stmt = { throw_stmt
                | expr_stmt
                }
 
-expr_stmt = { primary_prefix ~ (inc_dec | primary_postfix+)
-            | inc_dec ~ expr
+expr_stmt = { primary_prefix ~ primary_postfix+
             }
 
 // var
@@ -127,10 +126,9 @@ pow_expr = { unary_expr ~ (pow_op ~ unary_expr)* }
 pow_op = { "^" | "%" }
 
 unary_expr = { unary_op ~ expr
-             | primary_expr ~ inc_dec?
+             | primary_expr
              }
-unary_op = { inc_dec | not_op | add_op | deref_op | "typeid" | "new" | "gcnew" }
-inc_dec = { "++" | "--" }
+unary_op = { not_op | add_op | deref_op | "typeid" | "new" | "gcnew" }
 not_op = { "not" | "!" }
 deref_op = { "*" }
 
@@ -153,7 +151,7 @@ index_access = { "[" ~ expr ~ "]" }
 member_access = { member_access_op ~ id }
 member_access_op = _ { "." | "->" }
 mapping = { ":" ~ expr }
-assign = { !inc_dec ~ assign_op ~ expr }
+assign = { assign_op ~ expr }
 assign_op = { "=" | "+=" | "-=" | "*=" | "/=" | "%=" | "^=" }
 flatten = { "..." }
 

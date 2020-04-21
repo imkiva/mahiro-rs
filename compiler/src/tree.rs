@@ -36,12 +36,6 @@ pub enum Expr {
 }
 
 #[derive(Debug, PartialOrd, PartialEq, Clone)]
-pub enum OpFix {
-    Prefix,
-    Postfix,
-}
-
-#[derive(Debug, PartialOrd, PartialEq, Clone)]
 pub enum Op {
     // binary
     // also unary positive
@@ -76,8 +70,6 @@ pub enum Op {
     New,
     GcNew,
     Flatten,
-    Inc(OpFix),
-    Dec(OpFix),
 }
 
 pub type Body = Vec<Stmt>;

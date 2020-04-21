@@ -123,13 +123,7 @@ impl ParseTo<Expr> for Pair<'_, Rule> {
                         let expr = iter.next().unwrap().parse_to();
                         Unary(first.parse_to(), Box::new(expr))
                     }
-                    Rule::primary_expr => {
-                        let expr = first.parse_to();
-                        match iter.next() {
-                            Some(inc_dec) => Unary(inc_dec.parse_to(), Box::new(expr)),
-                            _ => expr,
-                        }
-                    }
+                    Rule::primary_expr => first.parse_to(),
                     _ => unreachable!(),
                 }
             }
@@ -309,26 +303,6 @@ impl ParseTo<Op> for Pair<'_, Rule> {
             "new" => Op::New,
             "gcnew" => Op::GcNew,
             "typeid" => Op::Typeid,
-
-            // TODO: consider making it elegant
-            // or using a more portable way.
-            // this may be changed in the future
-            "++" => Op::Inc(
-                if self.as_rule() == Rule::unary_op {
-                    OpFix::Prefix
-                } else {
-                    OpFix::Postfix
-                }
-            ),
-
-            "--" => Op::Dec(
-                if self.as_rule() == Rule::unary_op {
-                    OpFix::Prefix
-                } else {
-                    OpFix::Postfix
-                }
-            ),
-
             _ => unreachable!(),
         }
     }
@@ -528,34 +502,9 @@ impl ParseTo<Stmt> for Pair<'_, Rule> {
 
             Rule::expr_stmt => {
                 let mut iter = self.into_inner().into_iter();
-                let first = iter.next().unwrap();
-                match first.as_rule() {
-                    Rule::primary_prefix => {
-                        let prefix = first.parse_to();
-                        match iter.peek().unwrap().as_rule() {
-                            Rule::inc_dec =>
-                                ExprStmt(Unary(iter.next().unwrap().parse_to(),
-                                               Box::new(prefix))),
-
-                            Rule::primary_postfix =>
-                                ExprStmt(iter.flat_map(|postfix| postfix.into_inner())
-                                    .fold(prefix, build_primary_expr)),
-
-                            _ => unreachable!(),
-                        }
-                    }
-
-                    Rule::inc_dec => {
-                        let op = match first.parse_to() {
-                            Op::Inc(_) => Op::Inc(OpFix::Prefix),
-                            Op::Dec(_) => Op::Dec(OpFix::Prefix),
-                            _ => unreachable!(),
-                        };
-                        ExprStmt(Unary(op, Box::new(iter.next().unwrap().parse_to())))
-                    }
-
-                    _ => unreachable!(),
-                }
+                let prefix = iter.next().unwrap().parse_to();
+                ExprStmt(iter.flat_map(|postfix| postfix.into_inner())
+                    .fold(prefix, build_primary_expr))
             }
 
             _ => unreachable!()
