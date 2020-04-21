@@ -4,8 +4,8 @@ use libc::c_char;
 use libc::c_uchar;
 use libc::size_t;
 
-use crate::syntax::parse::CsParser;
 use crate::error::CompileError;
+use crate::Compiler;
 
 #[repr(C)]
 pub enum CCompileResultKind {
@@ -130,7 +130,7 @@ pub extern "C" fn compile_to_ast(file: *const c_char, src: *const c_char) -> CCo
     let result = catch_unwind(|| {
         let file = to_rust_str(file);
         let src = to_rust_str(src);
-        match CsParser::ast(src) {
+        match Compiler::compile_to_ast(src) {
             Ok(tree) => CCompileResult::from_string(
                 &format!("{:#?}", tree),
                 CCompileResultKind::Success,
