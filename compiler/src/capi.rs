@@ -4,7 +4,8 @@ use libc::c_char;
 use libc::c_uchar;
 use libc::size_t;
 
-use crate::parse::{CsParser, CompileError};
+use crate::parse::CsParser;
+use crate::error::CompileError;
 
 #[repr(C)]
 pub enum CCompileResultKind {
@@ -60,9 +61,11 @@ impl CCompileResult {
     }
 
     pub fn from_compile_error(file: &str, err: CompileError) -> CCompileResult {
-        let err = err.0;
-        CCompileResult::from_string(&format!("{}", err.with_path(file)),
-                                    CCompileResultKind::CompileError)
+        match err {
+            CompileError::ParseError(err) =>
+                CCompileResult::from_string(&format!("{}", err.with_path(file)),
+                                            CCompileResultKind::CompileError),
+        }
     }
 
     pub fn from_code(code: &[u8]) -> CCompileResult {

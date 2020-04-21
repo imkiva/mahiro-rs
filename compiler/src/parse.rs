@@ -5,6 +5,7 @@ use pest::Parser;
 use pest::iterators::{Pair, Pairs};
 use pest::error::Error;
 use pest::error::ErrorVariant;
+use crate::error::CompileError;
 use crate::tree::Entry::{HeaderEntry, StmtEntry};
 use crate::tree::Header::{Using, Import, Package};
 use crate::tree::Param::{Normal, Varargs};
@@ -24,10 +25,7 @@ use crate::tree::Stmt::{Break, Continue, Throw, Return,
 pub type ParseErrorVariant = ErrorVariant<Rule>;
 pub type ParseError = Error<Rule>;
 
-#[derive(Debug)]
-pub struct CompileError(pub ParseError);
-
-pub type CompileResult<T> = Result<T, CompileError>;
+pub type ParseResult<T> = Result<T, CompileError>;
 
 #[derive(Parser)]
 #[grammar = "grammar.pest"]
@@ -562,9 +560,9 @@ impl ParseTo<Case> for Pair<'_, Rule> {
 }
 
 impl CsParser {
-    pub fn ast(input: &str) -> CompileResult<Program> {
+    pub fn ast(input: &str) -> ParseResult<Program> {
         let parse = CsParser::parse(Rule::program, input);
-        let pairs = parse.map_err(|e| CompileError(e))?;
+        let pairs = parse.map_err(|e| CompileError::ParseError(e))?;
         Ok(pairs.parse_to())
     }
 }
