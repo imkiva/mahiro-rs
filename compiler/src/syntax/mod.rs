@@ -1,7 +1,7 @@
-pub mod parse;
-pub mod tree;
-pub mod desugar;
-pub mod pe;
+pub(crate) mod parse;
+pub(crate) mod tree;
+pub(crate) mod desugar;
+pub(crate) mod pe;
 
 #[cfg(test)]
 mod tests;

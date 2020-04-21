@@ -1,5 +1,7 @@
 use std::fmt::{Display, Formatter};
 use crate::syntax::tree::{Loc, Program};
+use crate::CompileResult;
+use crate::error::CompileError;
 
 #[derive(Debug)]
 pub struct DesugarError {
@@ -29,9 +31,17 @@ impl DesugarError {
     }
 }
 
-pub struct DesugarState {}
+pub struct Desugar;
 
-pub type DesugarMonad<S = DesugarState> = Result<S, DesugarError>;
+impl Desugar {
+    pub fn desugar(input: Program) -> CompileResult<Program> {
+        desugar_main(input).map_err(|e| CompileError::DesugarError(e))
+    }
+}
+
+struct DesugarState {}
+
+type DesugarMonad<S = DesugarState> = Result<S, DesugarError>;
 
 /// Converts sugar to normal expressions/statements.
 /// Sugars are:
@@ -45,6 +55,6 @@ pub type DesugarMonad<S = DesugarState> = Result<S, DesugarError>;
 /// - Expr::Literal,
 /// - Lit::Array
 /// - Lit::Pair
-fn _desugar(_input: Program) -> DesugarMonad<Program> {
-    Ok(vec![])
+fn desugar_main(input: Program) -> DesugarMonad<Program> {
+    Ok(input)
 }
