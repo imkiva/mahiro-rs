@@ -1,14 +1,14 @@
 #[cfg(test)]
 mod parse {
-    use crate::parse::*;
-    use crate::tree::Header::{Import, Using, Package};
-    use crate::tree::{Program, Op};
-    use crate::tree::Entry::{HeaderEntry, StmtEntry};
-    use crate::tree::Stmt::{Throw, Var, VarList, ExprStmt, Func, Namespace, Block, Struct, Return, Try, If, While, Loop, Break, Continue, For, ForEach};
-    use crate::tree::Expr::{Id, Literal, Unary, Lambda, Binary, Apply, Question, Ternary, Assign};
-    use crate::tree::Lit::{Null, Number, Bool, Str, Char, Array, Pair};
-    use crate::tree::Param::{Normal, Varargs};
-    use crate::tree::VarInit::{Simple, Structured};
+    use crate::syntax::parse::*;
+    use crate::syntax::tree::Header::{Import, Using, Package};
+    use crate::syntax::tree::{Program, Op};
+    use crate::syntax::tree::Entry::{HeaderEntry, StmtEntry};
+    use crate::syntax::tree::Stmt::{Throw, Var, VarList, ExprStmt, Func, Namespace, Block, Struct, Return, Try, If, While, Loop, Break, Continue, For, ForEach};
+    use crate::syntax::tree::Expr::{Id, Literal, Unary, Lambda, Binary, Apply, Question, Ternary, Assign};
+    use crate::syntax::tree::Lit::{Null, Number, Bool, Str, Char, Array, Pair};
+    use crate::syntax::tree::Param::{Normal, Varargs};
+    use crate::syntax::tree::VarInit::{Simple, Structured};
 
     #[test]
     fn works() {

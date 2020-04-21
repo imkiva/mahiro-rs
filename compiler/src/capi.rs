@@ -4,7 +4,7 @@ use libc::c_char;
 use libc::c_uchar;
 use libc::size_t;
 
-use crate::parse::CsParser;
+use crate::syntax::parse::CsParser;
 use crate::error::CompileError;
 
 #[repr(C)]
@@ -65,6 +65,9 @@ impl CCompileResult {
             CompileError::ParseError(err) =>
                 CCompileResult::from_string(&format!("{}", err.with_path(file)),
                                             CCompileResultKind::CompileError),
+            CompileError::DesugarError(err) =>
+                CCompileResult::from_string(&format!("{}", err.with_path(file)),
+                                            CCompileResultKind::CompileError)
         }
     }
 

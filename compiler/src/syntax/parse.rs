@@ -1,4 +1,4 @@
-use crate::tree::*;
+use crate::syntax::tree::*;
 
 use std::collections::VecDeque;
 use pest::Parser;
@@ -6,17 +6,17 @@ use pest::iterators::{Pair, Pairs};
 use pest::error::Error;
 use pest::error::ErrorVariant;
 use crate::error::CompileError;
-use crate::tree::Entry::{HeaderEntry, StmtEntry};
-use crate::tree::Header::{Using, Import, Package};
-use crate::tree::Param::{Normal, Varargs};
-use crate::tree::VarInit::{Simple, Structured};
-use crate::tree::Case::{Sth, Dft};
-use crate::tree::Lit::{Null, Number, Bool, Str,
+use crate::syntax::tree::Entry::{HeaderEntry, StmtEntry};
+use crate::syntax::tree::Header::{Using, Import, Package};
+use crate::syntax::tree::Param::{Normal, Varargs};
+use crate::syntax::tree::VarInit::{Simple, Structured};
+use crate::syntax::tree::Case::{Sth, Dft};
+use crate::syntax::tree::Lit::{Null, Number, Bool, Str,
                        Char, Array};
-use crate::tree::Expr::{Literal, Ternary, Question, Binary,
+use crate::syntax::tree::Expr::{Literal, Ternary, Question, Binary,
                         Unary, Id, Lambda, Group,
                         Apply, Assign};
-use crate::tree::Stmt::{Break, Continue, Throw, Return,
+use crate::syntax::tree::Stmt::{Break, Continue, Throw, Return,
                         VarList, Var, Func, Struct,
                         Namespace, Block, If, While,
                         For, ForEach, Loop,
