@@ -1,4 +1,42 @@
-pub type Name = String;
+use std::cmp::Ordering;
+
+pub type Line = usize;
+pub type Col = usize;
+pub type Loc = (Line, Col);
+
+#[derive(Debug, Clone)]
+pub struct Ident {
+    pub text: String,
+    pub loc: Option<Loc>,
+}
+
+impl PartialEq for Ident {
+    fn eq(&self, other: &Self) -> bool {
+        self.text.eq(&other.text)
+    }
+}
+
+impl PartialOrd for Ident {
+    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
+        self.text.partial_cmp(&other.text)
+    }
+}
+
+impl Ident {
+    pub fn new(span: pest::Span, text: &str) -> Self {
+        Ident {
+            text: text.to_string(),
+            loc: Some((span.start(), span.end())),
+        }
+    }
+
+    pub fn only(text: &str) -> Self {
+        Ident {
+            text: text.to_string(),
+            loc: None,
+        }
+    }
+}
 
 #[derive(Debug, PartialOrd, PartialEq, Clone)]
 pub enum Lit {
@@ -13,15 +51,15 @@ pub enum Lit {
 
 #[derive(Debug, PartialOrd, PartialEq, Clone)]
 pub enum Param {
-    Normal(Name),
-    Varargs(Name),
+    Normal(Ident),
+    Varargs(Ident),
 }
 
 #[derive(Debug, PartialOrd, PartialEq, Clone)]
 pub enum Expr {
     Literal(Lit),
-    Lambda(Option<Vec<Name>>, Vec<Param>, Box<Expr>),
-    Id(Name),
+    Lambda(Option<Vec<Ident>>, Vec<Param>, Box<Expr>),
+    Id(Ident),
     Group(Vec<Expr>),
 
     Assign(Op, Box<Expr>, Box<Expr>),
@@ -79,21 +117,21 @@ pub enum Stmt {
     // declaration statements
     Var(VarInit),
     VarList(Vec<VarInit>),
-    Func(Name, Vec<Param>, Body),
-    Namespace(Name, Body),
-    Struct(Name, Option<Expr>, Body),
+    Func(Ident, Vec<Param>, Body),
+    Namespace(Ident, Body),
+    Struct(Ident, Option<Expr>, Body),
     Block(Body),
 
     // common statements
     Return(Option<Expr>),
     Throw(Expr),
-    Try(Body, Name, Body),
+    Try(Body, Ident, Body),
     If(Expr, Body, Option<Body>),
     Switch(Expr, Vec<Case>),
     While(Expr, Body),
     Loop(Option<Expr>, Body),
-    For(Name, Expr, Expr, Expr, Body),
-    ForEach(Name, Expr, Body),
+    For(Ident, Expr, Expr, Expr, Body),
+    ForEach(Ident, Expr, Body),
     Break,
     Continue,
 
@@ -103,8 +141,8 @@ pub enum Stmt {
 
 #[derive(Debug, PartialOrd, PartialEq, Clone)]
 pub enum VarInit {
-    Simple(Name, Expr),
-    Structured(Vec<Name>, Expr),
+    Simple(Ident, Expr),
+    Structured(Vec<Ident>, Expr),
 }
 
 #[derive(Debug, PartialOrd, PartialEq, Clone)]
@@ -115,9 +153,9 @@ pub enum Case {
 
 #[derive(Debug, PartialOrd, PartialEq, Clone)]
 pub enum Header {
-    Package(Name),
-    Using(Name),
-    Import(Name, Option<Name>),
+    Package(Ident),
+    Using(Ident),
+    Import(Ident, Option<Ident>),
 }
 
 #[derive(Debug, PartialOrd, PartialEq, Clone)]

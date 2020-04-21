@@ -1,6 +1,7 @@
 #[cfg(test)]
 mod parse {
     use crate::syntax::parse::*;
+    use crate::syntax::tree::Ident;
     use crate::syntax::tree::Header::{Import, Using, Package};
     use crate::syntax::tree::{Program, Op};
     use crate::syntax::tree::Entry::{HeaderEntry, StmtEntry};
@@ -18,39 +19,39 @@ mod parse {
     #[test]
     fn parse_import() {
         let prog = parse("import streams");
-        assert_eq!(prog, vec![HeaderEntry(Import("streams".into(), None))])
+        assert_eq!(prog, vec![HeaderEntry(Import(Ident::only("streams"), None))])
     }
 
     #[test]
     fn parse_import_dot() {
         let prog = parse("import codec.base64");
-        assert_eq!(prog, vec![HeaderEntry(Import("codec.base64".into(), None))])
+        assert_eq!(prog, vec![HeaderEntry(Import(Ident::only("codec.base64"), None))])
     }
 
     #[test]
     fn parse_import_as() {
         let prog = parse("import streams as s");
-        assert_eq!(prog, vec![HeaderEntry(Import("streams".into(),
-                                                 Some("s".into())))])
+        assert_eq!(prog, vec![HeaderEntry(Import(Ident::only("streams"),
+                                                 Some(Ident::only("s"))))])
     }
 
     #[test]
     fn parse_import_dot_as() {
         let prog = parse("import codec.base64 as bbb");
-        assert_eq!(prog, vec![HeaderEntry(Import("codec.base64".into(),
-                                                 Some("bbb".into())))])
+        assert_eq!(prog, vec![HeaderEntry(Import(Ident::only("codec.base64"),
+                                                 Some(Ident::only("bbb"))))])
     }
 
     #[test]
     fn parse_using() {
         let prog = parse("using fuck");
-        assert_eq!(prog, vec![HeaderEntry(Using("fuck".into()))])
+        assert_eq!(prog, vec![HeaderEntry(Using(Ident::only("fuck")))])
     }
 
     #[test]
     fn parse_package() {
         let prog = parse("package fuck");
-        assert_eq!(prog, vec![HeaderEntry(Package("fuck".into()))])
+        assert_eq!(prog, vec![HeaderEntry(Package(Ident::only("fuck")))])
     }
 
     #[test]
@@ -63,12 +64,12 @@ mod parse {
             using hololive\n\
             package homolive");
         assert_eq!(prog, vec![
-            HeaderEntry(Package("fuck".into())),
-            HeaderEntry(Import("junk".into(), Some("jk".into()))),
-            HeaderEntry(Import("lolita".into(), Some("loli".into()))),
-            HeaderEntry(Import("boynextdoor".into(), None)),
-            HeaderEntry(Using("hololive".into())),
-            HeaderEntry(Package("homolive".into())),
+            HeaderEntry(Package(Ident::only("fuck"))),
+            HeaderEntry(Import(Ident::only("junk"), Some(Ident::only("jk")))),
+            HeaderEntry(Import(Ident::only("lolita"), Some(Ident::only("loli")))),
+            HeaderEntry(Import(Ident::only("boynextdoor"), None)),
+            HeaderEntry(Using(Ident::only("hololive"))),
+            HeaderEntry(Package(Ident::only("homolive"))),
         ])
     }
 
@@ -76,7 +77,7 @@ mod parse {
     fn parse_throw() {
         let prog = parse("throw boynextdoor");
         assert_eq!(prog, vec![
-            StmtEntry(Throw(Id("boynextdoor".into())))
+            StmtEntry(Throw(Id(Ident::only("boynextdoor"))))
         ]);
     }
 
@@ -87,7 +88,7 @@ mod parse {
             throw boynextdoor\n\
             @end");
         assert_eq!(prog, vec![
-            StmtEntry(Throw(Id("boynextdoor".into())))
+            StmtEntry(Throw(Id(Ident::only("boynextdoor"))))
         ]);
     }
 
@@ -95,7 +96,7 @@ mod parse {
     fn parse_var_decl_null() {
         let prog = parse("var a = null");
         assert_eq!(prog, vec![
-            StmtEntry(Var(Simple("a".into(), Literal(Null)))),
+            StmtEntry(Var(Simple(Ident::only("a"), Literal(Null)))),
         ])
     }
 
@@ -104,9 +105,9 @@ mod parse {
         let prog = parse("var a = null, b = null, c = null");
         assert_eq!(prog, vec![
             StmtEntry(VarList(vec![
-                Simple("a".into(), Literal(Null)),
-                Simple("b".into(), Literal(Null)),
-                Simple("c".into(), Literal(Null)),
+                Simple(Ident::only("a"), Literal(Null)),
+                Simple(Ident::only("b"), Literal(Null)),
+                Simple(Ident::only("c"), Literal(Null)),
             ]))
         ])
     }
@@ -116,7 +117,7 @@ mod parse {
         let prog = parse("var (a, b, c) = null");
         assert_eq!(prog, vec![
             StmtEntry(Var(Structured(
-                vec!["a".into(), "b".into(), "c".into()],
+                vec![Ident::only("a"), Ident::only("b"), Ident::only("c")],
                 Literal(Null),
             ))),
         ])
@@ -137,17 +138,17 @@ mod parse {
             var j = +0\n\
             var k = -0\n");
         assert_eq!(prog, vec![
-            StmtEntry(Var(Simple("a".into(), Literal(Number(100.65))))),
-            StmtEntry(Var(Simple("b".into(), Literal(Number(0 as f64))))),
-            StmtEntry(Var(Simple("c".into(), Unary(Op::Sub, Box::new(Literal(Number(1000 as f64))))))),
-            StmtEntry(Var(Simple("d".into(), Unary(Op::Sub, Box::new(Literal(Number(10086.123 as f64))))))),
-            StmtEntry(Var(Simple("e".into(), Literal(Number(114514 as f64))))),
-            StmtEntry(Var(Simple("f".into(), Unary(Op::Add, Box::new(Literal(Number(132 as f64))))))),
-            StmtEntry(Var(Simple("g".into(), Unary(Op::Add, Box::new(Literal(Number(114514.1232))))))),
-            StmtEntry(Var(Simple("h".into(), Unary(Op::Add, Box::new(Literal(Number(0 as f64))))))),
-            StmtEntry(Var(Simple("i".into(), Unary(Op::Sub, Box::new(Literal(Number(0 as f64))))))),
-            StmtEntry(Var(Simple("j".into(), Unary(Op::Add, Box::new(Literal(Number(0 as f64))))))),
-            StmtEntry(Var(Simple("k".into(), Unary(Op::Sub, Box::new(Literal(Number(0 as f64))))))),
+            StmtEntry(Var(Simple(Ident::only("a"), Literal(Number(100.65))))),
+            StmtEntry(Var(Simple(Ident::only("b"), Literal(Number(0 as f64))))),
+            StmtEntry(Var(Simple(Ident::only("c"), Unary(Op::Sub, Box::new(Literal(Number(1000 as f64))))))),
+            StmtEntry(Var(Simple(Ident::only("d"), Unary(Op::Sub, Box::new(Literal(Number(10086.123 as f64))))))),
+            StmtEntry(Var(Simple(Ident::only("e"), Literal(Number(114514 as f64))))),
+            StmtEntry(Var(Simple(Ident::only("f"), Unary(Op::Add, Box::new(Literal(Number(132 as f64))))))),
+            StmtEntry(Var(Simple(Ident::only("g"), Unary(Op::Add, Box::new(Literal(Number(114514.1232))))))),
+            StmtEntry(Var(Simple(Ident::only("h"), Unary(Op::Add, Box::new(Literal(Number(0 as f64))))))),
+            StmtEntry(Var(Simple(Ident::only("i"), Unary(Op::Sub, Box::new(Literal(Number(0 as f64))))))),
+            StmtEntry(Var(Simple(Ident::only("j"), Unary(Op::Add, Box::new(Literal(Number(0 as f64))))))),
+            StmtEntry(Var(Simple(Ident::only("k"), Unary(Op::Sub, Box::new(Literal(Number(0 as f64))))))),
         ]);
     }
 
@@ -157,8 +158,8 @@ mod parse {
             "var a = true\n\
             var b = false");
         assert_eq!(prog, vec![
-            StmtEntry(Var(Simple("a".into(), Literal(Bool(true))))),
-            StmtEntry(Var(Simple("b".into(), Literal(Bool(false))))),
+            StmtEntry(Var(Simple(Ident::only("a"), Literal(Bool(true))))),
+            StmtEntry(Var(Simple(Ident::only("b"), Literal(Bool(false))))),
         ]);
     }
 
@@ -167,7 +168,7 @@ mod parse {
         let prog = parse(
             "var a = null");
         assert_eq!(prog, vec![
-            StmtEntry(Var(Simple("a".into(), Literal(Null)))),
+            StmtEntry(Var(Simple(Ident::only("a"), Literal(Null)))),
         ]);
     }
 
@@ -176,7 +177,7 @@ mod parse {
         let prog = parse(
             "var a = \"boy next door\"");
         assert_eq!(prog, vec![
-            StmtEntry(Var(Simple("a".into(), Literal(Str("boy next door".into()))))),
+            StmtEntry(Var(Simple(Ident::only("a"), Literal(Str("boy next door".into()))))),
         ]);
     }
 
@@ -185,7 +186,7 @@ mod parse {
         let prog = parse(
             "var a = \"boy\\nnext\\ndoor\"");
         assert_eq!(prog, vec![
-            StmtEntry(Var(Simple("a".into(), Literal(Str("boy\nnext\ndoor".into()))))),
+            StmtEntry(Var(Simple(Ident::only("a"), Literal(Str("boy\nnext\ndoor".into()))))),
         ]);
     }
 
@@ -194,7 +195,7 @@ mod parse {
         let prog = parse(
             "var a = 'Z'");
         assert_eq!(prog, vec![
-            StmtEntry(Var(Simple("a".into(), Literal(Char('Z'))))),
+            StmtEntry(Var(Simple(Ident::only("a"), Literal(Char('Z'))))),
         ]);
     }
 
@@ -207,10 +208,10 @@ mod parse {
             var d = '\\\\' \n\
             ");
         assert_eq!(prog, vec![
-            StmtEntry(Var(Simple("a".into(), Literal(Char('\t'))))),
-            StmtEntry(Var(Simple("b".into(), Literal(Char('\''))))),
-            StmtEntry(Var(Simple("c".into(), Literal(Char('\n'))))),
-            StmtEntry(Var(Simple("d".into(), Literal(Char('\\'))))),
+            StmtEntry(Var(Simple(Ident::only("a"), Literal(Char('\t'))))),
+            StmtEntry(Var(Simple(Ident::only("b"), Literal(Char('\''))))),
+            StmtEntry(Var(Simple(Ident::only("c"), Literal(Char('\n'))))),
+            StmtEntry(Var(Simple(Ident::only("d"), Literal(Char('\\'))))),
         ]);
     }
 
@@ -220,8 +221,8 @@ mod parse {
             "var a = {}\n\
             var b = {1, 2, 3}");
         assert_eq!(prog, vec![
-            StmtEntry(Var(Simple("a".into(), Literal(Array(vec![]))))),
-            StmtEntry(Var(Simple("b".into(), Literal(Array(vec![
+            StmtEntry(Var(Simple(Ident::only("a"), Literal(Array(vec![]))))),
+            StmtEntry(Var(Simple(Ident::only("b"), Literal(Array(vec![
                 Literal(Number(1 as f64)),
                 Literal(Number(2 as f64)),
                 Literal(Number(3 as f64)),
@@ -234,10 +235,10 @@ mod parse {
         let prog = parse(
             "var a = {0: a, 1: b, 2: c}");
         assert_eq!(prog, vec![
-            StmtEntry(Var(Simple("a".into(), Literal(Array(vec![
-                Literal(Pair(Box::new(Literal(Number(0 as f64))), Box::new(Id("a".into())))),
-                Literal(Pair(Box::new(Literal(Number(1 as f64))), Box::new(Id("b".into())))),
-                Literal(Pair(Box::new(Literal(Number(2 as f64))), Box::new(Id("c".into())))),
+            StmtEntry(Var(Simple(Ident::only("a"), Literal(Array(vec![
+                Literal(Pair(Box::new(Literal(Number(0 as f64))), Box::new(Id(Ident::only("a"))))),
+                Literal(Pair(Box::new(Literal(Number(1 as f64))), Box::new(Id(Ident::only("b"))))),
+                Literal(Pair(Box::new(Literal(Number(2 as f64))), Box::new(Id(Ident::only("c"))))),
             ]))))),
         ]);
     }
@@ -247,10 +248,10 @@ mod parse {
         let prog = parse(
             "var id = [](a) -> a");
         assert_eq!(prog, vec![
-            StmtEntry(Var(Simple("id".into(), Lambda(
+            StmtEntry(Var(Simple(Ident::only("id"), Lambda(
                 None,
-                vec![Normal("a".into())],
-                Box::new(Id("a".into())),
+                vec![Normal(Ident::only("a"))],
+                Box::new(Id(Ident::only("a"))),
             )))),
         ]);
     }
@@ -260,17 +261,17 @@ mod parse {
         let prog = parse(
             "var format = [](fmt, ...arg) -> echo(fmt, arg...)");
         assert_eq!(prog, vec![
-            StmtEntry(Var(Simple("format".into(), Lambda(
+            StmtEntry(Var(Simple(Ident::only("format"), Lambda(
                 None,
                 vec![
-                    Normal("fmt".into()),
-                    Varargs("arg".into()),
+                    Normal(Ident::only("fmt")),
+                    Varargs(Ident::only("arg")),
                 ],
                 Box::new(Apply(
-                    Box::new(Id("echo".into())),
+                    Box::new(Id(Ident::only("echo"))),
                     vec![
-                        Id("fmt".into()),
-                        Unary(Op::Flatten, Box::new(Id("arg".into()))),
+                        Id(Ident::only("fmt")),
+                        Unary(Op::Flatten, Box::new(Id(Ident::only("arg")))),
                     ],
                 )),
             )))),
@@ -282,23 +283,23 @@ mod parse {
         let prog = parse(
             "var show = [](a) -> system.out.println(a)");
         assert_eq!(prog, vec![
-            StmtEntry(Var(Simple("show".into(), Lambda(
+            StmtEntry(Var(Simple(Ident::only("show"), Lambda(
                 None,
                 vec![
-                    Normal("a".into()),
+                    Normal(Ident::only("a")),
                 ],
                 Box::new(Apply(
                     Box::new(Binary(
                         Op::Access,
                         Box::new(Binary(
                             Op::Access,
-                            Box::new(Id("system".into())),
-                            Box::new(Id("out".into())),
+                            Box::new(Id(Ident::only("system"))),
+                            Box::new(Id(Ident::only("out"))),
                         )),
-                        Box::new(Id("println".into())))
+                        Box::new(Id(Ident::only("println"))))
                     ),
                     vec![
-                        Id("a".into()),
+                        Id(Ident::only("a")),
                     ],
                 )),
             )))),
@@ -311,10 +312,10 @@ mod parse {
         var lam = [lam]() -> lam\n\
         ");
         assert_eq!(prog, vec![
-            StmtEntry(Var(Simple("lam".into(), Lambda(
-                Some(vec!["lam".into()]),
+            StmtEntry(Var(Simple(Ident::only("lam"), Lambda(
+                Some(vec![Ident::only("lam")]),
                 vec![],
-                Box::new(Id("lam".into())),
+                Box::new(Id(Ident::only("lam"))),
             )))),
         ]);
     }
@@ -325,14 +326,14 @@ mod parse {
         var lam = [a, b, c]() -> lam\n\
         ");
         assert_eq!(prog, vec![
-            StmtEntry(Var(Simple("lam".into(), Lambda(
+            StmtEntry(Var(Simple(Ident::only("lam"), Lambda(
                 Some(vec![
-                    "a".into(),
-                    "b".into(),
-                    "c".into(),
+                    Ident::only("a"),
+                    Ident::only("b"),
+                    Ident::only("c"),
                 ]),
                 vec![],
-                Box::new(Id("lam".into())),
+                Box::new(Id(Ident::only("lam"))),
             )))),
         ]);
     }
@@ -343,18 +344,18 @@ mod parse {
         var lam = [a, b, c](x, y, z) -> lam\n\
         ");
         assert_eq!(prog, vec![
-            StmtEntry(Var(Simple("lam".into(), Lambda(
+            StmtEntry(Var(Simple(Ident::only("lam"), Lambda(
                 Some(vec![
-                    "a".into(),
-                    "b".into(),
-                    "c".into(),
+                    Ident::only("a"),
+                    Ident::only("b"),
+                    Ident::only("c"),
                 ]),
                 vec![
-                    Normal("x".into()),
-                    Normal("y".into()),
-                    Normal("z".into()),
+                    Normal(Ident::only("x")),
+                    Normal(Ident::only("y")),
+                    Normal(Ident::only("z")),
                 ],
-                Box::new(Id("lam".into())),
+                Box::new(Id(Ident::only("lam"))),
             )))),
         ]);
     }
@@ -364,9 +365,9 @@ mod parse {
         let prog = parse(
             "var r = a ? b");
         assert_eq!(prog, vec![
-            StmtEntry(Var(Simple("r".into(), Question(
-                Box::new(Id("a".into())),
-                Box::new(Id("b".into())))))),
+            StmtEntry(Var(Simple(Ident::only("r"), Question(
+                Box::new(Id(Ident::only("a"))),
+                Box::new(Id(Ident::only("b"))))))),
         ]);
     }
 
@@ -375,10 +376,10 @@ mod parse {
         let prog = parse(
             "var r = a ? b : c");
         assert_eq!(prog, vec![
-            StmtEntry(Var(Simple("r".into(), Ternary(
-                Box::new(Id("a".into())),
-                Box::new(Id("b".into())),
-                Box::new(Id("c".into())))))),
+            StmtEntry(Var(Simple(Ident::only("r"), Ternary(
+                Box::new(Id(Ident::only("a"))),
+                Box::new(Id(Ident::only("b"))),
+                Box::new(Id(Ident::only("c"))))))),
         ]);
     }
 
@@ -387,7 +388,7 @@ mod parse {
         let prog = parse(
             "var a = 1 + 2 * 3 + 4");
         assert_eq!(prog, vec![
-            StmtEntry(Var(Simple("a".into(), Binary(
+            StmtEntry(Var(Simple(Ident::only("a"), Binary(
                 Op::Add,
                 Box::new(Binary(
                     Op::Add,
@@ -409,9 +410,9 @@ mod parse {
         a = 100\n"
         );
         assert_eq!(prog, vec![
-            StmtEntry(ExprStmt(Apply(Box::new(Id("exit".into())), vec![]))),
+            StmtEntry(ExprStmt(Apply(Box::new(Id(Ident::only("exit"))), vec![]))),
             StmtEntry(ExprStmt(Assign(Op::Assign,
-                                      Box::new(Id("a".into())),
+                                      Box::new(Id(Ident::only("a"))),
                                       Box::new(Literal(Number(100.0)))))),
         ]);
     }
@@ -423,7 +424,7 @@ mod parse {
         end\n\
         ");
         assert_eq!(prog, vec![
-            StmtEntry(Func("jiegebuyao".into(), vec![], vec![]))
+            StmtEntry(Func(Ident::only("jiegebuyao"), vec![], vec![]))
         ]);
     }
 
@@ -434,11 +435,11 @@ mod parse {
         end\n\
         ");
         assert_eq!(prog, vec![
-            StmtEntry(Func("jiegebuyao".into(),
+            StmtEntry(Func(Ident::only("jiegebuyao"),
                            vec![
-                               Normal("a".into()),
-                               Normal("b".into()),
-                               Normal("c".into())],
+                               Normal(Ident::only("a")),
+                               Normal(Ident::only("b")),
+                               Normal(Ident::only("c"))],
                            vec![],
             ))
         ]);
@@ -451,11 +452,11 @@ mod parse {
         end\n\
         ");
         assert_eq!(prog, vec![
-            StmtEntry(Func("jiegebuyao".into(),
+            StmtEntry(Func(Ident::only("jiegebuyao"),
                            vec![
-                               Normal("a".into()),
-                               Normal("b".into()),
-                               Varargs("c".into())],
+                               Normal(Ident::only("a")),
+                               Normal(Ident::only("b")),
+                               Varargs(Ident::only("c"))],
                            vec![],
             ))
         ]);
@@ -468,8 +469,8 @@ mod parse {
         end\n\
         ");
         assert_eq!(prog, vec![
-            StmtEntry(Func("jiegebuyao".into(),
-                           vec![Varargs("x".into())],
+            StmtEntry(Func(Ident::only("jiegebuyao"),
+                           vec![Varargs(Ident::only("x"))],
                            vec![],
             ))
         ]);
@@ -482,7 +483,7 @@ mod parse {
         end\n\
         ");
         assert_eq!(prog, vec![
-            StmtEntry(Namespace("jiegebuyao".into(),
+            StmtEntry(Namespace(Ident::only("jiegebuyao"),
                                 vec![],
             ))
         ]);
@@ -497,9 +498,9 @@ mod parse {
         end\n\
         ");
         assert_eq!(prog, vec![
-            StmtEntry(Namespace("jiegebuyao".into(), vec![
-                Var(Simple("awsl".into(), Id("jiegebuyao".into()))),
-                Var(Simple("binbin".into(), Literal(Number(114514 as f64)))),
+            StmtEntry(Namespace(Ident::only("jiegebuyao"), vec![
+                Var(Simple(Ident::only("awsl"), Id(Ident::only("jiegebuyao")))),
+                Var(Simple(Ident::only("binbin"), Literal(Number(114514 as f64)))),
             ]))
         ]);
     }
@@ -513,9 +514,9 @@ mod parse {
         end\n\
         ");
         assert_eq!(prog, vec![
-            StmtEntry(Struct("jiegebuyao".into(), None, vec![
-                Var(Simple("awsl".into(), Id("jiegebuyao".into()))),
-                Var(Simple("binbin".into(), Literal(Number(114514 as f64)))),
+            StmtEntry(Struct(Ident::only("jiegebuyao"), None, vec![
+                Var(Simple(Ident::only("awsl"), Id(Ident::only("jiegebuyao")))),
+                Var(Simple(Ident::only("binbin"), Literal(Number(114514 as f64)))),
             ]))
         ]);
     }
@@ -529,9 +530,9 @@ mod parse {
         end\n\
         ");
         assert_eq!(prog, vec![
-            StmtEntry(Struct("jiegebuyao".into(), Some(Id("boynextdoor".into())), vec![
-                Var(Simple("awsl".into(), Id("jiegebuyao".into()))),
-                Var(Simple("binbin".into(), Literal(Number(114514 as f64)))),
+            StmtEntry(Struct(Ident::only("jiegebuyao"), Some(Id(Ident::only("boynextdoor"))), vec![
+                Var(Simple(Ident::only("awsl"), Id(Ident::only("jiegebuyao")))),
+                Var(Simple(Ident::only("binbin"), Literal(Number(114514 as f64)))),
             ]))
         ]);
     }
@@ -546,14 +547,14 @@ mod parse {
         ");
         assert_eq!(prog, vec![
             StmtEntry(Struct(
-                "jiegebuyao".into(),
+                Ident::only("jiegebuyao"),
                 Some(Apply(
-                    Box::new(Id("resolve".into())),
+                    Box::new(Id(Ident::only("resolve"))),
                     vec![Literal(Str("boy".into()))],
                 )),
                 vec![
-                    Var(Simple("awsl".into(), Id("jiegebuyao".into()))),
-                    Var(Simple("binbin".into(), Literal(Number(114514 as f64)))),
+                    Var(Simple(Ident::only("awsl"), Id(Ident::only("jiegebuyao")))),
+                    Var(Simple(Ident::only("binbin"), Literal(Number(114514 as f64)))),
                 ],
             ))
         ]);
@@ -584,7 +585,7 @@ mod parse {
     fn parse_return_sth() {
         let prog = parse("return i_single_push_minato_aqua");
         assert_eq!(prog, vec![
-            StmtEntry(Return(Some(Id("i_single_push_minato_aqua".into()))))
+            StmtEntry(Return(Some(Id(Ident::only("i_single_push_minato_aqua")))))
         ]);
     }
 
@@ -596,7 +597,7 @@ mod parse {
         end\n\
         ");
         assert_eq!(prog, vec![
-            StmtEntry(Func("jiegebuyao".into(), vec![], vec![
+            StmtEntry(Func(Ident::only("jiegebuyao"), vec![], vec![
                 Return(None),
             ]))
         ]);
@@ -613,15 +614,15 @@ mod parse {
         assert_eq!(prog, vec![
             StmtEntry(Try(
                 vec![
-                    ExprStmt(Apply(Box::new(Id("get".into())), vec![]))
+                    ExprStmt(Apply(Box::new(Id(Ident::only("get"))), vec![]))
                 ],
-                "e".into(),
+                Ident::only("e"),
                 vec![
                     ExprStmt(Apply(
                         Box::new(Binary(
                             Op::Access,
-                            Box::new(Id("e".into())),
-                            Box::new(Id("printStackTrace".into())))),
+                            Box::new(Id(Ident::only("e"))),
+                            Box::new(Id(Ident::only("printStackTrace"))))),
                         vec![]))
                 ],
             ))
@@ -640,14 +641,14 @@ mod parse {
                     Op::And,
                     Box::new(Binary(
                         Op::Gt,
-                        Box::new(Id("a".into())),
+                        Box::new(Id(Ident::only("a"))),
                         Box::new(Literal(Number(1.0))))),
                     Box::new(Binary(
                         Op::Lt,
-                        Box::new(Id("a".into())),
+                        Box::new(Id(Ident::only("a"))),
                         Box::new(Literal(Number(10.0)))))),
                    vec![
-                       ExprStmt(Apply(Box::new(Id("yes".into())), vec![])),
+                       ExprStmt(Apply(Box::new(Id(Ident::only("yes"))), vec![])),
                    ],
                    None)
             )
@@ -668,17 +669,17 @@ mod parse {
                     Op::And,
                     Box::new(Binary(
                         Op::Gt,
-                        Box::new(Id("a".into())),
+                        Box::new(Id(Ident::only("a"))),
                         Box::new(Literal(Number(1.0))))),
                     Box::new(Binary(
                         Op::Lt,
-                        Box::new(Id("a".into())),
+                        Box::new(Id(Ident::only("a"))),
                         Box::new(Literal(Number(10.0)))))),
                    vec![
-                       ExprStmt(Apply(Box::new(Id("yes".into())), vec![])),
+                       ExprStmt(Apply(Box::new(Id(Ident::only("yes"))), vec![])),
                    ],
                    Some(vec![
-                       ExprStmt(Apply(Box::new(Id("no".into())), vec![])),
+                       ExprStmt(Apply(Box::new(Id(Ident::only("no"))), vec![])),
                    ])))
         ]);
     }
@@ -695,14 +696,14 @@ mod parse {
                     Binary(Op::And,
                            Box::new(Binary(
                                Op::Gt,
-                               Box::new(Id("a".into())),
+                               Box::new(Id(Ident::only("a"))),
                                Box::new(Literal(Number(1.0))))),
                            Box::new(Binary(
                                Op::Lt,
-                               Box::new(Id("a".into())),
+                               Box::new(Id(Ident::only("a"))),
                                Box::new(Literal(Number(10.0)))))),
                     vec![
-                        ExprStmt(Apply(Box::new(Id("yes".into())), vec![])),
+                        ExprStmt(Apply(Box::new(Id(Ident::only("yes"))), vec![])),
                     ],
                 )
             )
@@ -720,7 +721,7 @@ mod parse {
                 Loop(
                     None,
                     vec![
-                        ExprStmt(Apply(Box::new(Id("yes".into())), vec![])),
+                        ExprStmt(Apply(Box::new(Id(Ident::only("yes"))), vec![])),
                     ],
                 )
             )
@@ -739,14 +740,14 @@ mod parse {
                     Some(Binary(Op::Or,
                                 Box::new(Binary(
                                     Op::Le,
-                                    Box::new(Id("a".into())),
+                                    Box::new(Id(Ident::only("a"))),
                                     Box::new(Literal(Number(1.0))))),
                                 Box::new(Binary(
                                     Op::Ge,
-                                    Box::new(Id("a".into())),
+                                    Box::new(Id(Ident::only("a"))),
                                     Box::new(Literal(Number(10.0))))))),
                     vec![
-                        ExprStmt(Apply(Box::new(Id("yes".into())), vec![])),
+                        ExprStmt(Apply(Box::new(Id(Ident::only("yes"))), vec![])),
                     ],
                 )
             )
@@ -795,16 +796,16 @@ mod parse {
             sum += i\n\
         end");
         assert_eq!(prog, vec![
-            StmtEntry(Var(Simple("sum".into(), Literal(Number(0.0))))),
+            StmtEntry(Var(Simple(Ident::only("sum"), Literal(Number(0.0))))),
             StmtEntry(For(
-                "i".into(),
+                Ident::only("i"),
                 Literal(Number(0.0)),
-                Binary(Op::Lt, Box::new(Id("i".into())), Box::new(Literal(Number(100.0)))),
-                Assign(Op::AddAss, Box::new(Id("i".into())), Box::new(Literal(Number(1.0)))),
+                Binary(Op::Lt, Box::new(Id(Ident::only("i"))), Box::new(Literal(Number(100.0)))),
+                Assign(Op::AddAss, Box::new(Id(Ident::only("i"))), Box::new(Literal(Number(1.0)))),
                 vec![
                     ExprStmt(Assign(Op::AddAss,
-                                    Box::new(Id("sum".into())),
-                                    Box::new(Id("i".into()))))
+                                    Box::new(Id(Ident::only("sum"))),
+                                    Box::new(Id(Ident::only("i")))))
                 ])
             ),
         ]);
@@ -816,9 +817,9 @@ mod parse {
         foreach i in range(10) do love(i)");
         assert_eq!(prog, vec![
             StmtEntry(ForEach(
-                "i".into(),
-                Apply(Box::new(Id("range".into())), vec![Literal(Number(10.0))]),
-                vec![ExprStmt(Apply(Box::new(Id("love".into())), vec![Id("i".into())]))],
+                Ident::only("i"),
+                Apply(Box::new(Id(Ident::only("range"))), vec![Literal(Number(10.0))]),
+                vec![ExprStmt(Apply(Box::new(Id(Ident::only("love"))), vec![Id(Ident::only("i"))]))],
             ))
         ]);
     }

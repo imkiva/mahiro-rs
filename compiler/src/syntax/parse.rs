@@ -12,15 +12,15 @@ use crate::syntax::tree::Param::{Normal, Varargs};
 use crate::syntax::tree::VarInit::{Simple, Structured};
 use crate::syntax::tree::Case::{Sth, Dft};
 use crate::syntax::tree::Lit::{Null, Number, Bool, Str,
-                       Char, Array};
+                               Char, Array};
 use crate::syntax::tree::Expr::{Literal, Ternary, Question, Binary,
-                        Unary, Id, Lambda, Group,
-                        Apply, Assign};
+                                Unary, Id, Lambda, Group,
+                                Apply, Assign};
 use crate::syntax::tree::Stmt::{Break, Continue, Throw, Return,
-                        VarList, Var, Func, Struct,
-                        Namespace, Block, If, While,
-                        For, ForEach, Loop,
-                        Try, ExprStmt, Switch};
+                                VarList, Var, Func, Struct,
+                                Namespace, Block, If, While,
+                                For, ForEach, Loop,
+                                Try, ExprStmt, Switch};
 
 pub type ParseErrorVariant = ErrorVariant<Rule>;
 pub type ParseError = Error<Rule>;
@@ -140,7 +140,7 @@ impl ParseTo<Expr> for Pair<'_, Rule> {
                 match first.as_rule() {
                     Rule::literal |
                     Rule::lambda => first.parse_to(),
-                    Rule::id => Id(first.as_str().into()),
+                    Rule::id => Id(Ident::new(first.as_span(), first.as_str())),
                     Rule::expr => Group(iter.map(|expr| expr.parse_to()).collect()),
                     _ => unreachable!(),
                 }
@@ -216,23 +216,26 @@ impl ParseTo<Header> for Pair<'_, Rule> {
     }
 }
 
-impl ParseTo<Name> for Pair<'_, Rule> {
-    fn parse_to(self) -> String {
+impl ParseTo<Ident> for Pair<'_, Rule> {
+    fn parse_to(self) -> Ident {
         match self.as_rule() {
-            Rule::mod_name => self.into_inner().into_iter()
-                .map(|id| id.parse_to())
-                .collect::<Vec<String>>()
-                .join("."),
+            Rule::mod_name => Ident::new(self.as_span(),
+                                         self.into_inner().into_iter()
+                                             .map(|id| id.parse_to())
+                                             .map(|ident: Ident| ident.text)
+                                             .collect::<Vec<String>>()
+                                             .join(".")
+                                             .as_str()),
 
-            Rule::id => self.as_str().to_owned(),
+            Rule::id => Ident::new(self.as_span(), self.as_str()),
 
             _ => unreachable!()
         }
     }
 }
 
-impl ParseTo<Vec<Name>> for Pair<'_, Rule> {
-    fn parse_to(self) -> Vec<Name> {
+impl ParseTo<Vec<Ident>> for Pair<'_, Rule> {
+    fn parse_to(self) -> Vec<Ident> {
         match self.as_rule() {
             Rule::params => self.into_inner().into_iter()
                 .map(|id| id.parse_to())
