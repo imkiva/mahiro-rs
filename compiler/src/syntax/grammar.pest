@@ -136,6 +136,7 @@ primary_expr = { primary_prefix ~ primary_postfix* }
 primary_prefix = { "(" ~ expr ~ ("," ~ expr)* ~ ")"
                  | literal
                  | lambda
+                 | allocation
                  | id
                  }
 primary_postfix = { apply
@@ -156,6 +157,9 @@ assign_op = { "=" | "+=" | "-=" | "*=" | "/=" | "%=" | "^=" }
 flatten = { "..." }
 
 lambda = { "[" ~ params? ~ "]" ~ callable_params ~ "->" ~ expr }
+
+allocation = { allocation_op ~ expr }
+allocation_op = _ { "new" | "gcnew" }
 
 literal = { number_lit
           | bool_lit

@@ -68,6 +68,7 @@ pub enum Param {
 pub enum Expr {
     Literal(Lit),
     Lambda(Option<Vec<Ident>>, Vec<Param>, Box<Expr>),
+    Alloc(Box<Expr>, Vec<Expr>),
     Id(Ident),
     Group(Vec<Expr>),
 

@@ -6,7 +6,7 @@ mod parse {
     use crate::syntax::tree::{Program, Op};
     use crate::syntax::tree::Entry::{HeaderEntry, StmtEntry};
     use crate::syntax::tree::Stmt::{Throw, Var, VarList, ExprStmt, Func, Namespace, Block, Struct, Return, Try, If, While, Loop, Break, Continue, For, ForEach};
-    use crate::syntax::tree::Expr::{Id, Literal, Unary, Lambda, Binary, Apply, Question, Ternary, Assign};
+    use crate::syntax::tree::Expr::{Id, Literal, Unary, Lambda, Binary, Apply, Question, Ternary, Assign, Alloc};
     use crate::syntax::tree::Lit::{Null, Number, Bool, Str, Char, Array, Pair};
     use crate::syntax::tree::Param::{Normal, Varargs};
     use crate::syntax::tree::VarInit::{Simple, Structured};
@@ -821,6 +821,81 @@ mod parse {
                 Apply(Box::new(Id(Ident::only("range"))), vec![Literal(Number(10.0))]),
                 vec![ExprStmt(Apply(Box::new(Id(Ident::only("love"))), vec![Id(Ident::only("i"))]))],
             ))
+        ]);
+    }
+
+    #[test]
+    fn parse_allocation() {
+        let prog = parse("\
+        var a = new fbk\n\
+        ");
+        assert_eq!(prog, vec![
+            StmtEntry(Var(Simple(Ident::only("a"),
+                                 Alloc(Box::new(Id(Ident::only("fbk"))), vec![]))))
+        ]);
+    }
+
+    #[test]
+    fn parse_allocation_with_ctor() {
+        let prog = parse("\
+        var a = new fbk(awsl)\n\
+        ");
+        assert_eq!(prog, vec![
+            StmtEntry(
+                Var(Simple(
+                    Ident::only("a"),
+                    Alloc(Box::new(Id(Ident::only("fbk"))),
+                          vec![
+                              Id(Ident::only("awsl"))
+                          ]),
+                ))
+            )
+        ]);
+    }
+
+    #[test]
+    fn parse_allocation_with_dot_and_ctor() {
+        let prog = parse("\
+        var a = new holo.fbk(awsl)\n\
+        ");
+        assert_eq!(prog, vec![
+            StmtEntry(
+                Var(Simple(
+                    Ident::only("a"),
+                    Alloc(Box::new(
+                        Binary(Op::Access,
+                               Box::new(Id(Ident::only("holo"))),
+                               Box::new(Id(Ident::only("fbk"))))),
+                          vec![
+                              Id(Ident::only("awsl"))
+                          ]),
+                ))
+            )
+        ]);
+    }
+
+
+    #[test]
+    fn parse_allocation_with_dot_and_call_and_ctor() {
+        let prog = parse("\
+        var a = new holo.fbk()(awsl, ansl)\n\
+        ");
+        assert_eq!(prog, vec![
+            StmtEntry(
+                Var(Simple(
+                    Ident::only("a"),
+                    Alloc(Box::new(
+                        Apply(Box::new(
+                            Binary(Op::Access,
+                                   Box::new(Id(Ident::only("holo"))),
+                                   Box::new(Id(Ident::only("fbk"))))),
+                              vec![])),
+                          vec![
+                              Id(Ident::only("awsl")),
+                              Id(Ident::only("ansl")),
+                          ]),
+                ))
+            )
         ]);
     }
 

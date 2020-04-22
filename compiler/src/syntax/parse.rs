@@ -14,9 +14,7 @@ use crate::syntax::tree::VarInit::{Simple, Structured};
 use crate::syntax::tree::Case::{Sth, Dft};
 use crate::syntax::tree::Lit::{Null, Number, Bool, Str,
                                Char, Array};
-use crate::syntax::tree::Expr::{Literal, Ternary, Question, Binary,
-                                Unary, Id, Lambda, Group,
-                                Apply, Assign};
+use crate::syntax::tree::Expr::{Literal, Ternary, Question, Binary, Unary, Id, Lambda, Group, Apply, Assign, Alloc};
 use crate::syntax::tree::Stmt::{Break, Continue, Throw, Return,
                                 VarList, Var, Func, Struct,
                                 Namespace, Block, If, While,
@@ -140,6 +138,7 @@ impl ParseTo<Expr> for Pair<'_, Rule> {
                 match first.as_rule() {
                     Rule::literal |
                     Rule::lambda => first.parse_to(),
+                    Rule::allocation => first.parse_to(),
                     Rule::id => Id(Ident::new(first.as_span(), first.as_str())),
                     Rule::expr => Group(iter.map(|expr| expr.parse_to()).collect()),
                     _ => unreachable!(),
@@ -193,6 +192,18 @@ impl ParseTo<Expr> for Pair<'_, Rule> {
                 let callable_params = iter.next().unwrap();
                 let expr = iter.next().unwrap();
                 Lambda(capture, callable_params.parse_to(), Box::new(expr.parse_to()))
+            }
+
+            // sub-rule of Rule::primary_prefix
+            Rule::allocation => {
+                let expr = fst!(self).unwrap().parse_to();
+                match expr {
+                    Apply(var_type, ctor_args) =>
+                        Alloc(var_type, ctor_args),
+
+                    expr =>
+                        Alloc(Box::new(expr), vec![]),
+                }
             }
 
             _ => unreachable!("run out of expr compiler"),
