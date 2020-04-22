@@ -1,18 +1,21 @@
+use crate::syntax::parse::*;
+use crate::syntax::tree::Ident;
+use crate::syntax::tree::Header::{Import, Using, Package};
+use crate::syntax::tree::{Program, Op};
+use crate::syntax::tree::Entry::{HeaderEntry, StmtEntry};
+use crate::syntax::tree::Stmt::{Throw, Var, VarList, ExprStmt, Func, Namespace, Block, Struct, Return, Try, If, While, Loop, Break, Continue, For, ForEach};
+use crate::syntax::tree::Expr::{Id, Literal, Unary, Lambda, Binary, Apply, Question, Ternary, Assign, Alloc};
+use crate::syntax::tree::Lit::{Null, Number, Bool, Str, Char, Array, Pair};
+use crate::syntax::tree::Param::{Normal, Varargs};
+use crate::syntax::tree::VarInit::{Simple, Structured};
+use crate::syntax::desugar::Desugar;
+
 #[cfg(test)]
 mod parse {
-    use crate::syntax::parse::*;
-    use crate::syntax::tree::Ident;
-    use crate::syntax::tree::Header::{Import, Using, Package};
-    use crate::syntax::tree::{Program, Op};
-    use crate::syntax::tree::Entry::{HeaderEntry, StmtEntry};
-    use crate::syntax::tree::Stmt::{Throw, Var, VarList, ExprStmt, Func, Namespace, Block, Struct, Return, Try, If, While, Loop, Break, Continue, For, ForEach};
-    use crate::syntax::tree::Expr::{Id, Literal, Unary, Lambda, Binary, Apply, Question, Ternary, Assign, Alloc};
-    use crate::syntax::tree::Lit::{Null, Number, Bool, Str, Char, Array, Pair};
-    use crate::syntax::tree::Param::{Normal, Varargs};
-    use crate::syntax::tree::VarInit::{Simple, Structured};
+    use super::*;
 
     #[test]
-    fn works() {
+    fn good_start() {
         assert_eq!(1, 1)
     }
 
@@ -240,6 +243,35 @@ mod parse {
                 Literal(Pair(Box::new(Literal(Number(1 as f64))), Box::new(Id(Ident::only("b"))))),
                 Literal(Pair(Box::new(Literal(Number(2 as f64))), Box::new(Id(Ident::only("c"))))),
             ]))))),
+        ]);
+    }
+
+    #[test]
+    fn parse_pair_literal() {
+        let prog = parse("\
+        var a = \"hello\": \"world\"\n\
+        var b = \"+\": [](a, b) -> a + b\n\
+        ");
+        assert_eq!(prog, vec![
+            StmtEntry(Var(Simple(Ident::only("a"), Literal(Pair(
+                Box::new(Literal(Str("hello".into()))),
+                Box::new(Literal(Str("world".into()))),
+            ))))),
+            StmtEntry(Var(Simple(Ident::only("b"), Literal(Pair(
+                Box::new(Literal(Str("+".into()))),
+                Box::new(Lambda(
+                    None,
+                    vec![
+                        Normal(Ident::only("a")),
+                        Normal(Ident::only("b")),
+                    ],
+                    Box::new(Binary(
+                        Op::Add,
+                        Box::new(Id(Ident::only("a"))),
+                        Box::new(Id(Ident::only("b"))))
+                    ),
+                )),
+            ))))),
         ]);
     }
 
@@ -914,7 +946,39 @@ mod parse {
         }
     }
 
-    fn parse(input: &str) -> Program {
+    pub fn parse(input: &str) -> Program {
         CsParser::ast(input).expect("Compile Error")
+    }
+}
+
+#[cfg(test)]
+mod desugar {
+    use super::*;
+
+    #[test]
+    fn good_start() {
+        assert_eq!(1, 1)
+    }
+
+    #[test]
+    fn desugar_for_each() {}
+
+    #[test]
+    fn desugar_import_without_as() {}
+
+    #[test]
+    fn desugar_array_lit() {}
+
+    #[test]
+    fn desugar_pair_lit() {}
+
+    #[test]
+    fn desugar_unary_add() {}
+
+    #[test]
+    fn desugar_unary_sub() {}
+
+    pub fn parse(input: &str) -> Program {
+        Desugar::desugar(super::parse::parse(input)).expect("Desugar Error")
     }
 }
