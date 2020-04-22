@@ -128,7 +128,7 @@ pow_op = { "^" | "%" }
 unary_expr = { unary_op ~ expr
              | primary_expr
              }
-unary_op = { not_op | add_op | deref_op | "typeid" | "new" | "gcnew" }
+unary_op = { not_op | add_op | deref_op | "typeid" }
 not_op = { "not" | "!" }
 deref_op = { "*" }
 

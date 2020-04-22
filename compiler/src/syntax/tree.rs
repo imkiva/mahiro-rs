@@ -114,8 +114,6 @@ pub enum Op {
     // unary
     Not,
     Typeid,
-    New,
-    GcNew,
     Flatten,
 }
 

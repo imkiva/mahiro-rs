@@ -305,8 +305,6 @@ impl ParseTo<Op> for Pair<'_, Rule> {
             "/=" => Op::DivAss,
             "^=" => Op::PowAss,
             "%=" => Op::ModAss,
-            "new" => Op::New,
-            "gcnew" => Op::GcNew,
             "typeid" => Op::Typeid,
             _ => unreachable!(),
         }
