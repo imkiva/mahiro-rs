@@ -234,6 +234,19 @@ mod parse {
     }
 
     #[test]
+    fn parse_array_literal_with_tailing_comma() {
+        let prog = parse("\
+        var b = {1, 2, 3, }");
+        assert_eq!(prog, vec![
+            StmtEntry(Var(Simple(Ident::only("b"), Literal(Array(vec![
+                Literal(Number(1 as f64)),
+                Literal(Number(2 as f64)),
+                Literal(Number(3 as f64)),
+            ]))))),
+        ]);
+    }
+
+    #[test]
     fn parse_array_pair_literal() {
         let prog = parse(
             "var a = {0: a, 1: b, 2: c}");
@@ -953,6 +966,7 @@ mod parse {
 
 #[cfg(test)]
 mod desugar {
+    use crate::syntax::utils::*;
     use super::*;
 
     #[test]
@@ -961,22 +975,127 @@ mod desugar {
     }
 
     #[test]
-    fn desugar_for_each() {}
+    fn desugar_for_each() {
+        let prog = parse("\
+        foreach i in vec do i.mark()");
+
+        let i = Ident::only("i");
+        let iter = assoc_id_from(&i);
+
+        let init = Apply(Box::new(Binary(
+            Op::Access,
+            Box::new(Id(Ident::only("vec"))),
+            Box::new(Id(Ident::only("iterate"))))
+        ), vec![]);
+
+        let cond = Apply(Box::new(Binary(
+            Op::Access,
+            Box::new(Id(iter.clone())),
+            Box::new(Id(Ident::only("is_valid"))))
+        ), vec![]);
+
+        let step = Apply(Box::new(Binary(
+            Op::Access,
+            Box::new(Id(iter.clone())),
+            Box::new(Id(Ident::only("next"))))
+        ), vec![]);
+
+        let value = Apply(Box::new(Binary(
+            Op::Access,
+            Box::new(Id(iter.clone())),
+            Box::new(Id(Ident::only("get"))))
+        ), vec![]);
+
+        let injected_assign = Assign(
+            Op::Assign,
+            Box::new(Id(i)),
+            Box::new(value));
+
+        assert_eq!(prog, vec![
+            StmtEntry(For(
+                iter, init, cond, step,
+                vec![
+                    ExprStmt(injected_assign),
+                    ExprStmt(Apply(
+                        Box::new(Binary(
+                            Op::Access,
+                            Box::new(Id(Ident::only("i"))),
+                            Box::new(Id(Ident::only("mark"))),
+                        )),
+                        vec![]))
+                ])
+            )
+        ]);
+    }
 
     #[test]
-    fn desugar_import_without_as() {}
+    fn desugar_import_without_as() {
+        let prog = parse("\
+        import boy as door\n\
+        import boy");
+        assert_eq!(prog, vec![
+            HeaderEntry(Import(Ident::only("boy"), Some(Ident::only("door")))),
+            HeaderEntry(Import(Ident::only("boy"), Some(Ident::only("boy")))),
+        ]);
+    }
 
     #[test]
-    fn desugar_array_lit() {}
+    fn desugar_array_lit() {
+        let prog = parse("\n\
+        var a = {1, 2, 3}");
+        assert_eq!(prog, vec![
+            StmtEntry(Var(Simple(Ident::only("a"), Alloc(
+                Box::new(builtin_array_type()),
+                vec![
+                    Literal(Number(1.0)),
+                    Literal(Number(2.0)),
+                    Literal(Number(3.0)),
+                ],
+            ))))
+        ]);
+    }
 
     #[test]
-    fn desugar_pair_lit() {}
+    fn desugar_array_lit_with_sign() {
+        let prog = parse("\n\
+        var a = {+1, -2, -3}");
+        assert_eq!(prog, vec![
+            StmtEntry(Var(Simple(Ident::only("a"), Alloc(
+                Box::new(builtin_array_type()),
+                vec![
+                    Literal(Number(1.0)),
+                    Literal(Number(-2.0)),
+                    Literal(Number(-3.0)),
+                ],
+            ))))
+        ]);
+    }
 
     #[test]
-    fn desugar_unary_add() {}
+    fn desugar_pair_lit() {
+        let prog = parse("\n\
+        var a = holo: 114514");
+        assert_eq!(prog, vec![
+            StmtEntry(Var(Simple(Ident::only("a"), Alloc(
+                Box::new(builtin_pair_type()),
+                vec![
+                    Id(Ident::only("holo")),
+                    Literal(Number(114514.0)),
+                ],
+            ))))
+        ]);
+    }
 
     #[test]
-    fn desugar_unary_sub() {}
+    fn desugar_sign_before_literal() {
+        let prog = parse("\
+        var a = -114\n\
+        var b = +514");
+        assert_eq!(prog, vec![
+            StmtEntry(Var(Simple(Ident::only("a"), Literal(Number(-114.0))))),
+            StmtEntry(Var(Simple(Ident::only("b"), Literal(Number(514.0))))),
+        ]);
+    }
 
     pub fn parse(input: &str) -> Program {
         Desugar::desugar(super::parse::parse(input)).expect("Desugar Error")
