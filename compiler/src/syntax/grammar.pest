@@ -183,7 +183,7 @@ string_lit = $ { "\"" ~ (escape | (!("\\" | "\"") ~ ANY)+)* ~ "\""}
 
 char_lit = $ { "\'" ~ (escape | (!("\\" | "\'") ~ ANY)+) ~ "\'"}
 
-array_lit = { "{" ~ args? ~ "}" }
+array_lit = { "{" ~ args? ~ ","? ~ "}" }
 
 bool_lit = { "true" | "false" }
 
