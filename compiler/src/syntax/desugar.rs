@@ -1,32 +1,29 @@
-use std::fmt::{Display, Formatter};
-use crate::syntax::tree::{Loc, Program, Stmt, Entry, Header, Body, Expr, Ident, Op, Case};
+use crate::syntax::tree::{Program, Stmt, Entry, Header, Expr, Op, Case};
 use crate::CompileResult;
-use crate::error::CompileError;
 use crate::syntax::tree::Entry::*;
 use crate::syntax::tree::Header::*;
 use crate::syntax::tree::Stmt::*;
-use crate::syntax::tree::Expr::{Apply, Binary, Id, Assign, Literal, Unary};
+use crate::syntax::tree::Expr::{Apply, Literal, Unary};
 use crate::syntax::tree::Case::{Sth, Dft};
-use crate::syntax::tree::Lit::{Array, Pair};
+use crate::syntax::tree::Lit::{Array, Pair, Number};
+use crate::syntax::utils::*;
 
 pub struct Desugar;
 
-pub(crate) const INJECT_PREFIX: &'static str = "__compiler_injected__";
-
 impl Desugar {
+    /// Converts sugar to normal expressions/statements.
+    /// Sugars are:
+    /// - Stmt::ForEach
+    /// - Header::Import(_, None)
+    /// - Expr::Literal(Array(_))
+    /// - Expr::Literal(Pair(_, _))
+    /// - Expr::Unary(Op::Add, _)
+    /// - Expr::Unary(Op::Sub, _)
     pub fn desugar(input: Program) -> CompileResult<Program> {
         desugar_main(input)
     }
 }
 
-/// Converts sugar to normal expressions/statements.
-/// Sugars are:
-/// - Stmt::ForEach
-/// - Header::Import(_, None)
-/// - Expr::Literal(Array(_))
-/// - Expr::Literal(Pair(_, _))
-/// - Expr::Unary(Op::Add, _)
-/// - Expr::Unary(Op::Sub, _)
 fn desugar_main(input: Program) -> CompileResult<Program> {
     Ok(input.desugar())
 }
@@ -149,14 +146,29 @@ impl Desugarable for Stmt {
 
 impl Desugarable for Expr {
     fn desugar(self) -> Self {
-        self
-        // match self {
-        //     Literal(Array(elem)) => Apply(),
-        //     Literal(Pair(_, _)) => {}
-        //     Unary(Op::Add, _) => {}
-        //     Unary(Op::Sub, _) => {}
-        //     expr => expr,
-        // }
+        match self {
+            Literal(Array(elem)) =>
+                Apply(Box::new(builtin_array_type()), elem),
+
+            Literal(Pair(k, v)) =>
+                Apply(Box::new(builtin_pair_type()), vec![*k, *v]),
+
+            Unary(Op::Add, e) => {
+                match e.as_ref() {
+                    Literal(Number(n)) => Literal(Number(n.abs())),
+                    _ => Unary(Op::Add, e),
+                }
+            }
+
+            Unary(Op::Sub, e) => {
+                match e.as_ref() {
+                    Literal(Number(n)) => Literal(Number(-n.clone())),
+                    _ => Unary(Op::Add, e),
+                }
+            }
+
+            expr => expr,
+        }
     }
 }
 
@@ -167,36 +179,4 @@ impl Desugarable for Case {
             Dft(body) => Dft(body.desugar()),
         }
     }
-}
-
-fn iterator_begin(iterable: Expr) -> Expr {
-    apply_on(iterable, "iterate", vec![])
-}
-
-fn iterator_next(iter: Ident) -> Expr {
-    apply_on(Id(iter), "next", vec![])
-}
-
-fn iterator_is_valid(iter: Ident) -> Expr {
-    apply_on(Id(iter), "is_valid", vec![])
-}
-
-fn iterator_get_data(iter: Ident) -> Expr {
-    apply_on(Id(iter), "get", vec![])
-}
-
-fn apply_on(expr: Expr, name: &str, args: Vec<Expr>) -> Expr {
-    Apply(Box::new(
-        Binary(Op::Access,
-               Box::new(expr),
-               Box::new(Id(Ident::only(name))))),
-          args)
-}
-
-fn assign_to_id(id: Ident, expr: Expr) -> Expr {
-    Assign(Op::Assign, Box::new(Id(id)), Box::new(expr))
-}
-
-fn assoc_id_from(id: &Ident) -> Ident {
-    Ident::only(&format!("{}{}", INJECT_PREFIX, id.text.as_str()))
 }
