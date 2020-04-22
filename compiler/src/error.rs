@@ -1,8 +1,8 @@
 use crate::syntax::parse::ParseError;
-use crate::syntax::desugar::DesugarError;
+use crate::check::CheckError;
 
 #[derive(Debug)]
 pub enum CompileError {
     ParseError(ParseError),
-    DesugarError(DesugarError),
+    CheckError(CheckError),
 }

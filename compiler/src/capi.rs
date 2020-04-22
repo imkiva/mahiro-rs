@@ -65,7 +65,7 @@ impl CCompileResult {
             CompileError::ParseError(err) =>
                 CCompileResult::from_string(&format!("{}", err.with_path(file)),
                                             CCompileResultKind::CompileError),
-            CompileError::DesugarError(err) =>
+            CompileError::CheckError(err) =>
                 CCompileResult::from_string(&format!("{}", err.with_path(file)),
                                             CCompileResultKind::CompileError)
         }

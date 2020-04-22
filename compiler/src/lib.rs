@@ -3,6 +3,7 @@ extern crate pest;
 extern crate pest_derive;
 
 pub(crate) mod syntax;
+pub(crate) mod check;
 pub mod error;
 mod capi;
 
