@@ -1,12 +1,13 @@
-use crate::syntax::tree::{Program, Stmt, Entry, Header, Expr, Op, Case};
+use crate::syntax::tree::{Program, Stmt, Entry, Header, Expr, Op, Case, VarInit};
 use crate::CompileResult;
 use crate::syntax::tree::Entry::*;
 use crate::syntax::tree::Header::*;
 use crate::syntax::tree::Stmt::*;
-use crate::syntax::tree::Expr::{Apply, Literal, Unary};
+use crate::syntax::tree::Expr::{Literal, Unary, Alloc};
 use crate::syntax::tree::Case::{Sth, Dft};
 use crate::syntax::tree::Lit::{Array, Pair, Number};
 use crate::syntax::utils::*;
+use crate::syntax::tree::VarInit::{Simple, Structured};
 
 pub struct Desugar;
 
@@ -94,10 +95,10 @@ impl Desugarable for Stmt {
             }
 
             Var(v) =>
-                Var(v),
+                Var(v.desugar()),
 
             VarList(vars) =>
-                VarList(vars),
+                VarList(vars.desugar()),
 
             Func(name, param, body) =>
                 Func(name, param, body.desugar()),
@@ -148,10 +149,10 @@ impl Desugarable for Expr {
     fn desugar(self) -> Self {
         match self {
             Literal(Array(elem)) =>
-                Apply(Box::new(builtin_array_type()), elem),
+                Alloc(Box::new(builtin_array_type()), elem.desugar()),
 
             Literal(Pair(k, v)) =>
-                Apply(Box::new(builtin_pair_type()), vec![*k, *v]),
+                Alloc(Box::new(builtin_pair_type()), vec![(*k).desugar(), (*v).desugar()]),
 
             Unary(Op::Add, e) => {
                 match e.as_ref() {
@@ -168,6 +169,15 @@ impl Desugarable for Expr {
             }
 
             expr => expr,
+        }
+    }
+}
+
+impl Desugarable for VarInit {
+    fn desugar(self) -> Self {
+        match self {
+            Simple(id, v) => Simple(id, v.desugar()),
+            Structured(ids, v) => Structured(ids, v.desugar()),
         }
     }
 }
