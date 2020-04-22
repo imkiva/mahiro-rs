@@ -28,7 +28,7 @@ pub type ParseErrorVariant = ErrorVariant<Rule>;
 pub type ParseError = Error<Rule>;
 
 #[derive(Parser)]
-#[grammar = "grammar.pest"]
+#[grammar = "syntax/grammar.pest"]
 pub struct CsParser;
 
 /// macro that extract the first child of a node
