@@ -38,6 +38,13 @@ impl Ident {
             loc: None,
         }
     }
+
+    pub fn same_loc(&self, text: &str) -> Self {
+        Ident {
+            text: text.to_string(),
+            loc: self.loc.clone(),
+        }
+    }
 }
 
 #[derive(Debug, PartialOrd, PartialEq, Clone)]
