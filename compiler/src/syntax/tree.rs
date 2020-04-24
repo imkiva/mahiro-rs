@@ -4,11 +4,17 @@ pub type Line = usize;
 pub type Col = usize;
 pub type Pos = (Line, Col);
 pub type Loc = (Pos, Pos);
+pub type AbsLoc = (usize, usize);
 
 #[derive(Debug, Clone)]
 pub struct Ident {
+    /// Text of the identifier
     pub text: String,
+    /// Human-readable location of the text
     pub loc: Option<Loc>,
+    /// Internal representation of location in pest-rs,
+    /// we need this for better error reporting.
+    pub abs_loc: Option<AbsLoc>,
 }
 
 impl PartialEq for Ident {
@@ -29,6 +35,7 @@ impl Ident {
             text: text.to_string(),
             loc: Some((span.start_pos().line_col(),
                        span.end_pos().line_col())),
+            abs_loc: Some((span.start(), span.end())),
         }
     }
 
@@ -36,6 +43,7 @@ impl Ident {
         Ident {
             text: text.to_string(),
             loc: None,
+            abs_loc: None,
         }
     }
 
@@ -43,6 +51,7 @@ impl Ident {
         Ident {
             text: text.to_string(),
             loc: self.loc.clone(),
+            abs_loc: self.abs_loc.clone(),
         }
     }
 }

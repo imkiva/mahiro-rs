@@ -950,8 +950,8 @@ mod parse {
         let a = prog.get(0).unwrap();
 
         match a {
-            StmtEntry(Var(Simple(Ident { text: _, loc: Some(a) },
-                                 Id(Ident { text: _, loc: Some(b) })))) => {
+            StmtEntry(Var(Simple(Ident { text: _, loc: Some(a), abs_loc: _ },
+                                 Id(Ident { text: _, loc: Some(b), abs_loc: _ })))) => {
                 assert_eq!(a.clone(), ((1, 5), (1, 6)));
                 assert_eq!(b.clone(), ((1, 9), (1, 10)));
             }
