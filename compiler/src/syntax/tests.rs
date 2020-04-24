@@ -1101,3 +1101,125 @@ mod desugar {
         Desugar::desugar(super::parse::parse(input)).expect("Desugar Error")
     }
 }
+
+#[cfg(test)]
+mod optimize {
+    use super::*;
+    use crate::syntax::optimize::{Optimizer, OptimizeLevel};
+
+    trait LevelParse {
+        fn parse(self, input: &str) -> Program;
+    }
+
+    impl LevelParse for OptimizeLevel {
+        fn parse(self, input: &str) -> Program {
+            Optimizer::run(super::desugar::parse(input), self)
+        }
+    }
+
+    trait EquivWith {
+        fn equiv_with(self, other: Self);
+    }
+
+    impl EquivWith for Program {
+        fn equiv_with(self, other: Self) {
+            assert_eq!(self, other)
+        }
+    }
+
+    #[test]
+    fn optimize_basic_constant() {
+        OptimizeLevel::Basic.parse("\
+        var a = 1 + 1"
+        ).equiv_with(OptimizeLevel::Disabled.parse("\
+        var a = 2"
+        ));
+    }
+
+    #[test]
+    fn optimize_basic_while_false() {
+        OptimizeLevel::Basic.parse("\
+        while false\n\
+            a += 1\n\
+        end"
+        ).equiv_with(OptimizeLevel::Disabled.parse(""
+        ));
+    }
+
+    #[test]
+    fn optimize_basic_while_true() {
+        OptimizeLevel::Basic.parse("\
+        while true\n\
+            a += 1\n\
+        end"
+        ).equiv_with(OptimizeLevel::Disabled.parse("\
+        loop\n\
+            a += 1\n\
+        end"
+        ));
+    }
+
+    #[test]
+    fn optimize_basic_while_uncertain() {
+        OptimizeLevel::Basic.parse("\
+        var a = 1 + 2 * 3 + 4\n\
+        while a < 10\n\
+            a += 1\n\
+        end"
+        ).equiv_with(OptimizeLevel::Disabled.parse("\
+        var a = 11\n\
+        while a < 10\n\
+            a += 1\n\
+        end"
+        ));
+    }
+
+    #[test]
+    fn optimize_basic_if_false() {
+        OptimizeLevel::Basic.parse("\
+        if false\n\
+            a += 1\n\
+        end"
+        ).equiv_with(OptimizeLevel::Disabled.parse(""
+        ));
+    }
+
+    #[test]
+    fn optimize_basic_if_true() {
+        OptimizeLevel::Basic.parse("\
+        if true\n\
+            a += 1\n\
+        end"
+        ).equiv_with(OptimizeLevel::Disabled.parse("\
+        block a += 1 end"
+        ));
+    }
+
+    #[test]
+    fn optimize_basic_if_true_else() {
+        OptimizeLevel::Basic.parse("\
+        if true\n\
+            a += 1\n\
+            b = a * c\n\
+        else\n\
+            a += boynextdoot\n\
+        end"
+        ).equiv_with(OptimizeLevel::Disabled.parse("\
+        block\n\
+        a += 1\n\
+        b = a * c\n\
+        end"
+        ));
+    }
+
+    #[test]
+    fn optimize_basic_if_false_else_empty() {
+        OptimizeLevel::Basic.parse("\
+        if false\n\
+            a += 1\n\
+        else\n\
+        end"
+        ).equiv_with(OptimizeLevel::Disabled.parse(""
+        ));
+    }
+}

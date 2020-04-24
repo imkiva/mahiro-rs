@@ -18,8 +18,8 @@ impl Desugar {
     /// - Header::Import(_, None)
     /// - Expr::Literal(Array(_))
     /// - Expr::Literal(Pair(_, _))
-    /// - Expr::Unary(Op::Add, _)
-    /// - Expr::Unary(Op::Sub, _)
+    /// - Expr::Unary(Op::Add, Literal(Number(_)))
+    /// - Expr::Unary(Op::Sub, Literal(Number(_)))
     pub fn desugar(input: Program) -> CompileResult<Program> {
         desugar_main(input)
     }
