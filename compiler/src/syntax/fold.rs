@@ -126,6 +126,7 @@ impl Eliminable for Stmt {
                 let mut body = body.eliminate_with(ctx);
                 match (body.len(), ctx.map(|c| c.needs_new_scope(&body))) {
                     (0, _) => None,
+                    // TODO: flatten the whole body if the body doesn't need a new scope
                     (1, Some(false)) => body.pop(),
                     _ => Some(Block(body)),
                 }

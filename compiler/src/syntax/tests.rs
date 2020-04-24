@@ -1185,13 +1185,24 @@ mod optimize {
     }
 
     #[test]
-    fn optimize_basic_if_true() {
+    fn optimize_basic_if_true_single_body() {
         OptimizeLevel::Basic.parse("\
         if true\n\
             a += 1\n\
         end"
         ).equiv_with(OptimizeLevel::Disabled.parse("\
         block a += 1 end"
+        ));
+    }
+
+    #[test]
+    fn optimize_aggressive_if_true_single_body() {
+        OptimizeLevel::Aggressive.parse("\
+        if true\n\
+            a += 1\n\
+        end"
+        ).equiv_with(OptimizeLevel::Disabled.parse("\
+        a += 1"
         ));
     }
 
@@ -1220,6 +1231,62 @@ mod optimize {
         else\n\
         end"
         ).equiv_with(OptimizeLevel::Disabled.parse(""
+        ));
+    }
+
+    #[test]
+    fn optimize_basic_for_false() {
+        OptimizeLevel::Basic.parse("\
+        for i = 0, false, i += 1\n\
+            fuck()\n\
+        end"
+        ).equiv_with(OptimizeLevel::Disabled.parse(""
+        ));
+    }
+
+    #[test]
+    fn optimize_basic_for_true() {
+        OptimizeLevel::Basic.parse("\
+        for i = 0, true, i += 1\n\
+        end"
+        ).equiv_with(OptimizeLevel::Disabled.parse("\
+        block\n\
+        var i = 0\n\
+        loop\n\
+            i += 1
+        end\n\
+        end"
+        ));
+    }
+
+    #[test]
+    fn optimize_basic_loop_true_empty() {
+        OptimizeLevel::Basic.parse("\
+        loop\n\
+        until true"
+        ).equiv_with(OptimizeLevel::Disabled.parse(""
+        ));
+    }
+
+    #[test]
+    fn optimize_basic_loop_true_single_body() {
+        OptimizeLevel::Basic.parse("\
+        loop\n\
+            a += 1
+        until true"
+        ).equiv_with(OptimizeLevel::Disabled.parse("\
+        block a += 1 end"
+        ));
+    }
+
+    #[test]
+    fn optimize_aggressive_loop_true_single_body() {
+        OptimizeLevel::Aggressive.parse("\
+        loop\n\
+            a += 1
+        until true"
+        ).equiv_with(OptimizeLevel::Disabled.parse("\
+        a += 1"
         ));
     }
 }
