@@ -1,6 +1,7 @@
 use crate::syntax::tree::{Program, Expr, Body};
 use crate::syntax::fold::{FoldContext, Eliminable};
 use crate::syntax::tree::Stmt::ExprStmt;
+use crate::CompileResult;
 
 pub enum OptimizeLevel {
     /// Disable any kind of optimization
@@ -16,16 +17,20 @@ pub enum OptimizeLevel {
 pub struct Optimizer;
 
 impl Optimizer {
-    pub fn run(input: Program, level: OptimizeLevel) -> Program {
-        match &level {
-            OptimizeLevel::Disabled => input,
-            OptimizeLevel::Basic => input.eliminate(),
-            OptimizeLevel::Aggressive |
-            OptimizeLevel::JustDoIt => {
-                let mut ctx = OptimizeContext::new(level);
-                ctx.prepare(&input);
-                input.eliminate_with(Some(&ctx))
-            }
+    pub fn run(input: Program, level: OptimizeLevel) -> CompileResult<Program> {
+        Ok(optimize_main(input, level))
+    }
+}
+
+fn optimize_main(input: Program, level: OptimizeLevel) -> Program {
+    match &level {
+        OptimizeLevel::Disabled => input,
+        OptimizeLevel::Basic => input.eliminate(),
+        OptimizeLevel::Aggressive |
+        OptimizeLevel::JustDoIt => {
+            let mut ctx = OptimizeContext::new(level);
+            ctx.prepare(&input);
+            input.eliminate_with(Some(&ctx))
         }
     }
 }

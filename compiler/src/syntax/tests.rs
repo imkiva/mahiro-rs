@@ -1114,6 +1114,7 @@ mod optimize {
     impl LevelParse for OptimizeLevel {
         fn parse(self, input: &str) -> Program {
             Optimizer::run(super::desugar::parse(input), self)
+                .expect("Optimize Error")
         }
     }
 
