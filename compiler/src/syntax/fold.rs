@@ -300,10 +300,10 @@ fn fold_unary(op: Op, operand: Expr, _: Option<&dyn FoldContext>) -> Expr {
 
 fn fold_binary(op: Op, lhs: Expr, rhs: Expr, _: Option<&dyn FoldContext>) -> Expr {
     match (&op, &lhs, &rhs) {
-        (Op::And, Literal(Bool(false)), _) => Literal(Bool(false)),
-        (Op::And, Literal(Bool(true)), _) => rhs,
-        (Op::Or, Literal(Bool(true)), _) => Literal(Bool(true)),
-        (Op::Or, Literal(Bool(false)), _) => rhs,
+        (Op::And, Literal(Bool(false)), Literal(Bool(_))) => Literal(Bool(false)),
+        (Op::And, Literal(Bool(true)), Literal(Bool(_))) => rhs,
+        (Op::Or, Literal(Bool(true)), Literal(Bool(_))) => Literal(Bool(true)),
+        (Op::Or, Literal(Bool(false)), Literal(Bool(_))) => rhs,
 
         (Op::Add, Literal(Number(a)), Literal(Number(b))) =>
             Literal(Number(a + b)),

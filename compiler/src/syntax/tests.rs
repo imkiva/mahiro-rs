@@ -1128,11 +1128,74 @@ mod optimize {
     }
 
     #[test]
-    fn optimize_basic_constant() {
+    fn optimize_basic_constant_math() {
         OptimizeLevel::Basic.parse("\
         var a = 1 + 1"
         ).equiv_with(OptimizeLevel::Disabled.parse("\
         var a = 2"
+        ));
+    }
+
+    #[test]
+    fn optimize_basic_constant_cmp() {
+        OptimizeLevel::Basic.parse("\
+        var a = 3 >= 4"
+        ).equiv_with(OptimizeLevel::Disabled.parse("\
+        var a = false"
+        ));
+    }
+
+    #[test]
+    fn optimize_basic_constant_short_circuit_1() {
+        OptimizeLevel::Basic.parse("\
+        var a = true || false || false"
+        ).equiv_with(OptimizeLevel::Disabled.parse("\
+        var a = true"
+        ));
+    }
+
+    #[test]
+    fn optimize_basic_constant_short_circuit_2() {
+        OptimizeLevel::Basic.parse("\
+        var a = false || true || false"
+        ).equiv_with(OptimizeLevel::Disabled.parse("\
+        var a = true"
+        ));
+    }
+
+    #[test]
+    fn optimize_basic_constant_short_circuit_3() {
+        OptimizeLevel::Basic.parse("\
+        var a = false || false || true"
+        ).equiv_with(OptimizeLevel::Disabled.parse("\
+        var a = true"
+        ));
+    }
+
+    #[test]
+    fn optimize_basic_constant_short_circuit_4() {
+        OptimizeLevel::Basic.parse("\
+        var a = false && fuck1 || fuck2"
+        ).equiv_with(OptimizeLevel::Disabled.parse("\
+        var a = false && fuck1 || fuck2"
+        ));
+    }
+
+    #[test]
+    fn optimize_basic_constant_short_circuit_5() {
+        OptimizeLevel::Basic.parse("\
+        var a = true && false || fuck2"
+        ).equiv_with(OptimizeLevel::Disabled.parse("\
+        var a = false || fuck2"
+        ));
+    }
+
+    #[test]
+    fn optimize_basic_constant_short_circuit_6() {
+        OptimizeLevel::Basic.parse("\
+        var a = true && true && fuck"
+        ).equiv_with(OptimizeLevel::Disabled.parse("\
+        var a = true && fuck"
         ));
     }
 

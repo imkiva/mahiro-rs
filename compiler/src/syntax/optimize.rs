@@ -1,6 +1,6 @@
 use crate::syntax::tree::{Program, Expr, Body};
 use crate::syntax::fold::{FoldContext, Eliminable};
-use crate::syntax::tree::Stmt::{Var, VarList, Break, Continue, ExprStmt};
+use crate::syntax::tree::Stmt::ExprStmt;
 
 pub enum OptimizeLevel {
     /// Disable any kind of optimization
