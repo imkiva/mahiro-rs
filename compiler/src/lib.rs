@@ -11,6 +11,7 @@ use crate::error::CompileError;
 use crate::syntax::tree::Program;
 use crate::syntax::parse::CsParser;
 use crate::syntax::desugar::Desugar;
+use crate::syntax::optimize::{Optimizer, OptimizeLevel};
 
 pub struct Compiler;
 
@@ -20,6 +21,7 @@ impl Compiler {
     pub fn compile_to_ast(src: &str) -> CompileResult<Program> {
         let program = CsParser::ast(src)?;
         let program = Desugar::desugar(program)?;
+        let program = Optimizer::run(program, OptimizeLevel::Basic)?;
         Ok(program)
     }
 }
