@@ -1,4 +1,5 @@
 use std::cmp::Ordering;
+use std::hash::Hash;
 
 pub type Line = usize;
 pub type Col = usize;
@@ -26,6 +27,14 @@ impl PartialEq for Ident {
 impl PartialOrd for Ident {
     fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
         self.text.partial_cmp(&other.text)
+    }
+}
+
+impl Eq for Ident {}
+
+impl Hash for Ident {
+    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+        self.text.hash(state)
     }
 }
 

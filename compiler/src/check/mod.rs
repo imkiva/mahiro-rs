@@ -1,5 +1,14 @@
 use std::fmt::{Display, Formatter};
-use crate::syntax::tree::AbsLoc;
+use crate::syntax::tree::{AbsLoc, Program};
+use crate::CompileResult;
+
+mod ctx;
+mod checker;
+
+/// The semantic checker that checks:
+/// - Redefinition of identifiers?
+/// - Are all break/continue(s) inside loop statements?
+pub struct Checker;
 
 #[derive(Debug)]
 pub struct CheckError {
@@ -25,6 +34,13 @@ impl Display for CheckErrorVariant {
             CheckErrorVariant::RedefVar(_, _, name) =>
                 write!(f, "redefinition of '{}'", name.as_str()),
         }
+    }
+}
+
+impl Checker {
+    pub fn check(input: Program) -> CompileResult<Program> {
+        checker::checker_main(&input)?;
+        Ok(input)
     }
 }
 
