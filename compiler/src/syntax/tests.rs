@@ -1009,16 +1009,13 @@ mod desugar {
             Box::new(Id(Ident::only("get"))))
         ), vec![]);
 
-        let injected_assign = Assign(
-            Op::Assign,
-            Box::new(Id(i)),
-            Box::new(value));
+        let injected_assign = Var(Simple(i, value));
 
         assert_eq!(prog, vec![
             StmtEntry(For(
                 iter, init, cond, step,
                 vec![
-                    ExprStmt(injected_assign),
+                    injected_assign,
                     ExprStmt(Apply(
                         Box::new(Binary(
                             Op::Access,
