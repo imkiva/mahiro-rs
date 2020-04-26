@@ -219,6 +219,41 @@ mod checker {
         ].join("\n"));
     }
 
+    #[test]
+    fn test_for_each_redef_1() {
+        assert_err("\
+        foreach value in range(10)\n\
+            var value = 10\n\
+            echo(value)\n\
+        end\n", vec![
+            " --> <stdin>:1:9",
+            "  |",
+            "1 | foreach value in range(10)␊",
+            "2 | var value = 10␊",
+            "  |    ^----^",
+            "  |",
+            "  = Check Error: redefinition of 'value'",
+        ].join("\n"))
+    }
+
+    #[test]
+    fn test_for_each_redef_2() {
+        assert_err("\
+        foreach value in range(10)\n\
+            echo(value)\n\
+            var value = 10\n\
+        end\n", vec![
+            " --> <stdin>:1:9",
+            "  |",
+            "1 | foreach value in range(10)␊",
+            "  | ...",
+            "3 | var value = 10␊",
+            "  |    ^----^",
+            "  |",
+            "  = Check Error: redefinition of 'value'",
+        ].join("\n"))
+    }
+
     fn assert_err(input: &str, err: String) {
         assert_eq!(check(input), err)
     }
