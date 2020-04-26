@@ -1,5 +1,5 @@
 use crate::syntax::tree::{Expr, Ident, Op, Stmt};
-use crate::syntax::tree::Expr::{Id, Binary, Apply, Assign};
+use crate::syntax::tree::Expr::{Id, Binary, Apply};
 use crate::syntax::tree::Stmt::Var;
 use crate::syntax::tree::VarInit::Simple;
 
