@@ -60,15 +60,9 @@ impl CCompileResult {
         }
     }
 
-    pub fn from_compile_error(file: &str, err: CompileError) -> CCompileResult {
-        match err {
-            CompileError::ParseError(err) =>
-                CCompileResult::from_string(&format!("{}", err.with_path(file)),
-                                            CCompileResultKind::CompileError),
-            CompileError::CheckError(err) =>
-                CCompileResult::from_string(&format!("{}", err.with_path(file)),
-                                            CCompileResultKind::CompileError)
-        }
+    pub fn from_compile_error(path: &str, input: &str, err: CompileError) -> CCompileResult {
+        CCompileResult::from_string(&err.error_message(path, input),
+                                    CCompileResultKind::CompileError)
     }
 
     pub fn from_code(code: &[u8]) -> CCompileResult {
@@ -110,8 +104,8 @@ fn to_rust_str<'a>(cstr: *const c_char) -> &'a str {
 #[no_mangle]
 pub extern "C" fn compile_source(file: *const c_char, src: *const c_char) -> CCompileResult {
     let result = catch_unwind(|| {
-        let _file = to_rust_str(file);
-        let _src = to_rust_str(src);
+        let _path = to_rust_str(file);
+        let _input = to_rust_str(src);
         // TODO: codegen
         CCompileResult::from_string("unimplemented",
                                     CCompileResultKind::InternalError)
@@ -128,14 +122,14 @@ pub extern "C" fn compile_source(file: *const c_char, src: *const c_char) -> CCo
 #[no_mangle]
 pub extern "C" fn compile_to_ast(file: *const c_char, src: *const c_char) -> CCompileResult {
     let result = catch_unwind(|| {
-        let file = to_rust_str(file);
-        let src = to_rust_str(src);
-        match Compiler::compile_to_ast(src) {
+        let path = to_rust_str(file);
+        let input = to_rust_str(src);
+        match Compiler::compile_to_ast(input) {
             Ok(tree) => CCompileResult::from_string(
                 &format!("{:#?}", tree),
                 CCompileResultKind::Success,
             ),
-            Err(err) => CCompileResult::from_compile_error(file, err),
+            Err(err) => CCompileResult::from_compile_error(path, input, err),
         }
     });
 
