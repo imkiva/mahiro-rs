@@ -1,6 +1,6 @@
 use crate::CompileResult;
 use crate::syntax::tree::{Program, Entry, Header, Stmt, VarInit, Ident, Expr, Param, Body, Case};
-use crate::check::ctx::{CheckContext, ScopeId};
+use crate::check::context::{CheckContext, ScopeId};
 use crate::error::CompileError;
 use crate::check::{CheckError, CheckErrorVariant};
 

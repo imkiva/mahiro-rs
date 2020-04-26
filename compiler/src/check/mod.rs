@@ -2,7 +2,7 @@ use std::fmt::{Display, Formatter};
 use crate::syntax::tree::{AbsLoc, Program};
 use crate::CompileResult;
 
-mod ctx;
+mod context;
 mod checker;
 
 #[cfg(test)]
