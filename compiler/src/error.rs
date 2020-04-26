@@ -1,7 +1,7 @@
 use crate::syntax::parse::{ParseError, ParseErrorVariant};
 use crate::check::CheckError;
 use crate::syntax::tree::AbsLoc;
-use crate::check::CheckErrorVariant::RedefVar;
+use crate::check::CheckErrorVariant::{Redefinition, DanglingLoopControl};
 
 #[derive(Debug)]
 pub enum CompileError {
@@ -23,8 +23,10 @@ impl CompileError {
 
 fn format_check_error(err: CheckError, path: &str, input: &str) -> String {
     match err.variant {
-        RedefVar(Some(first), Some(redef), _) =>
-            format_check_error_with_loc_range(err, path, input, first, redef),
+        Redefinition(Some(prev), Some(curr), _) =>
+            format_check_error_with_loc_range(err, path, input, prev, curr),
+        DanglingLoopControl(Some(loc), _) =>
+            format_check_error_with_loc(err, path, input, loc),
         _ => format!("{}", err.with_path(path)),
     }
 }
@@ -62,8 +64,8 @@ mod tests {
         var c = b + nice\n\
         var nice = b";
         let err = CheckError {
-            file: "".to_string(),
-            variant: RedefVar(None, None, "nice".into()),
+            file: None,
+            variant: Redefinition(None, None, "nice".into()),
         };
         let err = CompileError::CheckError(err);
         let msg = err.error_message("<stdin>", input);
@@ -101,8 +103,8 @@ mod tests {
         };
 
         let err = CheckError {
-            file: "".to_string(),
-            variant: RedefVar(pos1, pos2, "nice".into()),
+            file: None,
+            variant: Redefinition(pos1, pos2, "nice".into()),
         };
 
         let err = CompileError::CheckError(err);
