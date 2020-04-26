@@ -503,8 +503,8 @@ impl ParseTo<Stmt> for Pair<'_, Rule> {
             }
 
             Rule::loop_control => fst!(self).unwrap().parse_to(),
-            Rule::break_ => Break,
-            Rule::continue_ => Continue,
+            Rule::break_ => Break(Ident::new(self.as_span(), self.as_str())),
+            Rule::continue_ => Continue(Ident::new(self.as_span(), self.as_str())),
 
             Rule::try_stmt => {
                 let mut iter = self.into_inner().into_iter();

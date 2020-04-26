@@ -158,8 +158,8 @@ pub enum Stmt {
     Loop(Option<Expr>, Body),
     For(Ident, Expr, Expr, Expr, Body),
     ForEach(Ident, Expr, Body),
-    Break,
-    Continue,
+    Break(Ident),
+    Continue(Ident),
 
     // expression statement
     ExprStmt(Expr),

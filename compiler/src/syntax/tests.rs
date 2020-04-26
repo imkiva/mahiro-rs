@@ -806,7 +806,7 @@ mod parse {
             break\n\
         end");
         assert_eq!(prog, vec![
-            StmtEntry(While(Literal(Bool(true)), vec![Break]))
+            StmtEntry(While(Literal(Bool(true)), vec![Break(Ident::only("break"))]))
         ]);
     }
 
@@ -817,7 +817,7 @@ mod parse {
             continue\n\
         end");
         assert_eq!(prog, vec![
-            StmtEntry(While(Literal(Bool(true)), vec![Continue]))
+            StmtEntry(While(Literal(Bool(true)), vec![Continue(Ident::only("continue"))]))
         ]);
     }
 
@@ -829,7 +829,10 @@ mod parse {
             break\n\
         end");
         assert_eq!(prog, vec![
-            StmtEntry(While(Literal(Bool(true)), vec![Continue, Break]))
+            StmtEntry(While(Literal(Bool(true)), vec![
+                Continue(Ident::only("continue")),
+                Break(Ident::only("break"))
+            ]))
         ]);
     }
 

@@ -139,8 +139,8 @@ impl Desugarable for Stmt {
             Block(body) =>
                 Block(body.desugar()),
 
-            Break => Break,
-            Continue => Continue,
+            Break(id) => Break(id),
+            Continue(id) => Continue(id),
         }
     }
 }
