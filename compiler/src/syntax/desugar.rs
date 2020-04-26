@@ -82,12 +82,12 @@ impl Desugarable for Stmt {
                 let init = iterator_begin(expr.clone());
                 let cond = iterator_is_valid(iter_id.clone());
                 let step = iterator_next(iter_id.clone());
-                let element_init = assign_to_id(id, iterator_get_data(iter_id.clone()));
+                let element_init = init_var(id, iterator_get_data(iter_id.clone()));
 
                 // inject element initialization body
                 let body = body.desugar();
                 let mut desugared_body = Vec::with_capacity(1 + body.len());
-                desugared_body.push(ExprStmt(element_init));
+                desugared_body.push(element_init);
                 desugared_body.extend(body.into_iter());
 
                 // convert to for loop

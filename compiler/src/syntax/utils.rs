@@ -1,5 +1,7 @@
-use crate::syntax::tree::{Expr, Ident, Op};
+use crate::syntax::tree::{Expr, Ident, Op, Stmt};
 use crate::syntax::tree::Expr::{Id, Binary, Apply, Assign};
+use crate::syntax::tree::Stmt::Var;
+use crate::syntax::tree::VarInit::Simple;
 
 pub(crate) const INJECT_PREFIX: &'static str = "__compiler_injected__";
 
@@ -41,8 +43,8 @@ pub(crate) fn apply_on(expr: Expr, name: &str, args: Vec<Expr>) -> Expr {
           args)
 }
 
-pub(crate) fn assign_to_id(id: Ident, expr: Expr) -> Expr {
-    Assign(Op::Assign, Box::new(Id(id)), Box::new(expr))
+pub(crate) fn init_var(id: Ident, expr: Expr) -> Stmt {
+    Var(Simple(id, expr))
 }
 
 pub(crate) fn assoc_id_from(id: &Ident) -> Ident {
