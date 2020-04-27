@@ -52,9 +52,17 @@ impl Display for CheckErrorVariant {
             CheckErrorVariant::BottomTypedExpr(_) =>
                 write!(f, "the type of expression cannot be void"),
             CheckErrorVariant::TypeMismatch(_, expected, actual) =>
-                write!(f, "expected type {:?}, but got {:?}", expected, actual),
+                match expected {
+                    Some(expected) =>
+                        write!(f, "expected type '{:?}', but got '{:?}'", expected, actual),
+                    _ => write!(f, "unexpected type '{:?}'", actual)
+                }
+
             CheckErrorVariant::ArgcMismatch(_, expected, actual) =>
-                write!(f, "expected argument count {:?}, but provided {:?}", expected, actual),
+                write!(f, "expected {:?} {} , but provided {:?}",
+                       expected,
+                       if *expected <= 1 { "argument" } else { "arguments" },
+                       actual),
         }
     }
 }

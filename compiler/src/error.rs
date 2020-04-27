@@ -1,7 +1,7 @@
 use crate::syntax::parse::{ParseError, ParseErrorVariant};
-use crate::check::CheckError;
+use crate::check::{CheckError, CheckErrorVariant};
 use crate::syntax::tree::Loc;
-use crate::check::CheckErrorVariant::{Redefinition, DanglingLoopControl};
+use crate::check::CheckErrorVariant::{Redefinition, DanglingLoopControl, BottomTypedExpr, TypeMismatch, ArgcMismatch};
 use std::cmp::{min, max};
 
 #[derive(Debug)]
@@ -28,8 +28,13 @@ fn format_check_error(err: CheckError, path: &str, input: &str) -> String {
     match err.variant {
         Redefinition(Loc::InSource(ss, se), Loc::InSource(es, ee), _) =>
             format_check_error_with_loc_range(err, path, input, (ss, se), (es, ee)),
-        DanglingLoopControl(Loc::InSource(s, e), _) =>
+
+        DanglingLoopControl(Loc::InSource(s, e), _) |
+        BottomTypedExpr(Loc::InSource(s, e)) |
+        TypeMismatch(Loc::InSource(s, e), _, _) |
+        ArgcMismatch(Loc::InSource(s, e), _, _) =>
             format_check_error_with_loc(err, path, input, (s, e)),
+
         _ => format!("{}", err.with_path(path)),
     }
 }
