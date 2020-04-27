@@ -111,7 +111,7 @@ fn check_stmt(ctx: &mut CheckContext, stmt: &Stmt) -> CompileResult<Type> {
         Stmt::Return(expr) => {
             if let Some(expr) = expr {
                 let t = check_expr(ctx, expr)?;
-                t.not_void(expr.to_loc())?;
+                t.not_void(&expr.to_loc())?;
                 Ok(t)
             } else {
                 Ok(Type::Void)
@@ -119,37 +119,38 @@ fn check_stmt(ctx: &mut CheckContext, stmt: &Stmt) -> CompileResult<Type> {
         }
 
         Stmt::Throw(expr) => {
-            check_expr(ctx, expr)?.not_void(expr.to_loc())?;
+            check_expr(ctx, expr)?.not_void(&expr.to_loc())?;
             Ok(Type::Void)
         }
 
         Stmt::Try(tbody, id, cbody) => {
             // check try-body
             ctx.enter_scope(ScopeId::UnnamedBlock);
-            check_body(ctx, tbody)?;
+            let t = check_body(ctx, tbody)?;
             ctx.leave_scope();
             // check catch-body
             ctx.enter_scope(ScopeId::UnnamedBlock);
             // fyou dynamic typing! exception type?
             check_redefinition(ctx, id, &Type::Any)?;
-            check_body(ctx, cbody)?;
+            check_body(ctx, cbody)?.against(&t, &Loc::Injected)?;
             ctx.leave_scope();
-            Ok(Type::Void)
+            Ok(t)
         }
 
         Stmt::If(cond, t, f) => {
-            check_expr(ctx, cond)?.against(Type::Bool, cond.to_loc())?;
+            check_expr(ctx, cond)?.against(&Type::Bool, &cond.to_loc())?;
             // check if-true branch
             ctx.enter_scope(ScopeId::UnnamedBlock);
-            check_body(ctx, t)?;
+            let t_ret = check_body(ctx, t)?;
             ctx.leave_scope();
             // check if-false branch
             if let Some(else_body) = f {
                 ctx.enter_scope(ScopeId::UnnamedBlock);
-                check_body(ctx, else_body)?;
+                check_body(ctx, else_body)?.against(&t_ret, &Loc::Injected)?;
                 ctx.leave_scope();
             }
-            Ok(Type::Void)
+
+            Ok(t_ret)
         }
 
         Stmt::Switch(expr, cases) => {
@@ -159,38 +160,38 @@ fn check_stmt(ctx: &mut CheckContext, stmt: &Stmt) -> CompileResult<Type> {
         }
 
         Stmt::While(cond, body) => {
-            check_expr(ctx, cond)?.against(Type::Bool, cond.to_loc())?;
+            check_expr(ctx, cond)?.against(&Type::Bool, &cond.to_loc())?;
             ctx.enter_scope(ScopeId::UnnamedBlock);
             ctx.enter_loop();
-            check_body(ctx, body)?;
+            let t = check_body(ctx, body)?;
             ctx.leave_loop();
             ctx.leave_scope();
-            Ok(Type::Void)
+            Ok(t)
         }
 
         Stmt::Loop(cond, body) => {
             if let Some(cond) = cond {
-                check_expr(ctx, cond)?.against(Type::Bool, cond.to_loc())?;
+                check_expr(ctx, cond)?.against(&Type::Bool, &cond.to_loc())?;
             }
             ctx.enter_scope(ScopeId::UnnamedBlock);
             ctx.enter_loop();
-            check_body(ctx, body)?;
+            let t = check_body(ctx, body)?;
             ctx.leave_loop();
             ctx.leave_scope();
-            Ok(Type::Void)
+            Ok(t)
         }
 
         Stmt::For(id, init, cond, step, body) => {
             ctx.enter_scope(ScopeId::UnnamedBlock);
             let t = check_expr(ctx, init)?;
             check_redefinition(ctx, id, &t)?;
-            check_expr(ctx, cond)?.against(Type::Bool, cond.to_loc())?;
+            check_expr(ctx, cond)?.against(&Type::Bool, &cond.to_loc())?;
             check_expr(ctx, step)?;
             ctx.enter_loop();
-            check_body(ctx, body)?;
+            let t = check_body(ctx, body)?;
             ctx.leave_loop();
             ctx.leave_scope();
-            Ok(Type::Void)
+            Ok(t)
         }
 
         Stmt::Break(id) |

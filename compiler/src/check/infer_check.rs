@@ -17,28 +17,30 @@ pub enum Type {
 }
 
 impl Type {
-    pub fn not_void(&self, loc: Loc) -> CompileResult<()> {
+    pub fn not_void(&self, loc: &Loc) -> CompileResult<()> {
         match self {
-            Type::Void => raise_bottom_typed_expr_error(loc),
+            Type::Void => raise_bottom_typed_expr_error(loc.clone()),
             _ => Ok(())
         }
     }
 
-    pub fn is_applicable(&self, loc: Loc) -> CompileResult<()> {
+    pub fn is_applicable(&self, loc: &Loc) -> CompileResult<()> {
         match self {
             Type::Any |
             Type::Applicable(_, _) => Ok(()),
-            _ => raise_type_mismatch_error(loc, None, self.clone())
+            _ => raise_type_mismatch_error(loc.clone(), None, self.clone())
         }
     }
 
-    pub fn against(&self, expected: Type, loc: Loc) -> CompileResult<Type> {
-        match (self, &expected) {
+    pub fn against(&self, expected: &Type, loc: &Loc) -> CompileResult<()> {
+        match (self, expected) {
             (Type::Any, _) |
-            (_, Type::Any) => Ok(Type::Any),
-            (lhs, rhs) if lhs == rhs => Ok(expected),
+            (_, Type::Any) => Ok(()),
+            (lhs, rhs) if lhs == rhs => Ok(()),
             _ => {
-                raise_type_mismatch_error(loc, Some(expected), self.clone())?;
+                raise_type_mismatch_error(loc.clone(),
+                                          Some(expected.clone()),
+                                          self.clone())?;
                 unreachable!()
             }
         }
@@ -73,13 +75,13 @@ pub fn check_expr(ctx: &mut CheckContext, expr: &Expr) -> CompileResult<Type> {
         }
 
         Expr::Assign(_, _, lhs, rhs) => {
-            check_expr(ctx, rhs.as_ref())?.not_void(rhs.as_ref().to_loc())?;
+            check_expr(ctx, rhs.as_ref())?.not_void(&rhs.as_ref().to_loc())?;
             check_expr(ctx, lhs.as_ref())
         }
 
         Expr::Apply(loc, id, args) => {
             let t = check_expr(ctx, id.as_ref())?;
-            t.is_applicable(id.as_ref().to_loc())?;
+            t.is_applicable(&id.as_ref().to_loc())?;
             match t {
                 Type::Any => Ok(Type::Any),
                 Type::Applicable(ret, types) => {
@@ -89,7 +91,7 @@ pub fn check_expr(ctx: &mut CheckContext, expr: &Expr) -> CompileResult<Type> {
                                                   args.len())?;
                     }
                     for (arg, t) in args.iter().zip(types) {
-                        check_expr(ctx, arg)?.against(t, arg.to_loc())?;
+                        check_expr(ctx, arg)?.against(&t, &arg.to_loc())?;
                     }
                     Ok(ret.as_ref().clone())
                 }
@@ -97,12 +99,12 @@ pub fn check_expr(ctx: &mut CheckContext, expr: &Expr) -> CompileResult<Type> {
             }
         }
 
-        _ => Ok(Type::Any),
         // TODO
         // Expr::Unary(_, _) => {}
         // Expr::Binary(_, _, _) => {}
         // Expr::Ternary(_, _, _) => {}
         // Expr::Question(_, _) => {}
+        _ => Ok(Type::Any),
     }
 }
 
