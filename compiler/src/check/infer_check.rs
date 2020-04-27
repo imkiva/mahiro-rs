@@ -81,8 +81,9 @@ impl Type {
 
     pub fn against(&self, expected: &Type) -> CompileResult<Type> {
         match (&self.ty, &expected.ty) {
-            (Types::Any, _) |
-            (_, Types::Any) => Ok(self.clone()),
+            (Types::Any, t) |
+            (t, Types::Any) if *t != Types::Void => Ok(self.clone()),
+
             (lhs, rhs) if lhs == rhs => Ok(self.clone()),
 
             _ => {
