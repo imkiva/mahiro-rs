@@ -55,7 +55,7 @@ fn check_stmt(ctx: &mut CheckContext, stmt: &Stmt) -> CompileResult<Type> {
                 .map(|p| Types::Any.with_loc(p.to_loc()))
                 .collect();
             check_redefinition(ctx, id, &Types::Applicable(
-                Box::new(Types::Any.into_type()), args.clone()).with_loc(id.to_loc()), )?;
+                Box::new(Types::Any.into_type()), args.clone()).with_loc(id.to_loc()))?;
 
             // second, enter the function scope and check params
             ctx.enter_scope(ScopeId::Func(id.text.clone()));
