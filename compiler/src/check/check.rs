@@ -81,8 +81,9 @@ fn check_stmt(ctx: &mut CheckContext, stmt: &Stmt) -> CompileResult<Type> {
             // we shouldn't use check_redefinition because what we are doing
             // is actually redefining the function itself.
             ctx.leave_scope();
-            ctx.define_in_current(id, &Types::Applicable(Box::new(ret), args.clone())
-                .with_loc(id.to_loc()));
+            ctx.rewrite_in_current(id,
+                                   &Types::Applicable(Box::new(ret), args.clone())
+                                       .with_loc(id.to_loc()));
             Ok(Types::Void.into_type())
         }
 
@@ -113,14 +114,14 @@ fn check_stmt(ctx: &mut CheckContext, stmt: &Stmt) -> CompileResult<Type> {
             Ok(t)
         }
 
-        Stmt::Return(expr) => {
+        Stmt::Return(loc, expr) => {
             if let Some(expr) = expr {
                 let mut t = check_expr(ctx, expr)?;
                 t.loc = expr.to_loc();
                 t.not_void()?;
                 Ok(t)
             } else {
-                Ok(Types::Void.into_type())
+                Ok(Types::Void.with_loc(loc.clone()))
             }
         }
 
@@ -163,7 +164,7 @@ fn check_stmt(ctx: &mut CheckContext, stmt: &Stmt) -> CompileResult<Type> {
 
         Stmt::Switch(expr, cases) => {
             check_expr(ctx, expr)?.not_void()?;
-            let t= check_switch_cases(ctx, cases)?;
+            let t = check_switch_cases(ctx, cases)?;
             Ok(t)
         }
 

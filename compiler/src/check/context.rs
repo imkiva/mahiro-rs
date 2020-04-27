@@ -41,19 +41,16 @@ impl Scope {
         }
     }
 
-    /// Lookup identifier by type.
     pub fn lookup_ident(&self, ident: &Ident) -> Option<(&Ident, &Type)> {
         self.defined_idents.get_key_value(ident)
     }
 
-    /// Define new symbol in current scope
-    /// Return previous defined identifier if redefinition detected.
-    pub fn define(&mut self, ident: &Ident, idtype: &Type) -> Option<&Ident> {
-        if self.defined_idents.contains_key(&ident) {
-            self.lookup_ident(&ident).map(|p| p.0)
-        } else {
+    pub fn define(&mut self, ident: &Ident, idtype: &Type, force: bool) -> Option<&Ident> {
+        if force || !self.defined_idents.contains_key(&ident) {
             let _ = self.defined_idents.insert(ident.clone(), idtype.clone());
             None
+        } else {
+            self.lookup_ident(&ident).map(|p| p.0)
         }
     }
 
@@ -77,10 +74,13 @@ impl CheckContext {
         Self::default()
     }
 
+    /// Lookup identifier by name and return the name and type.
     pub fn lookup_in_current(&self, ident: &Ident) -> Option<(&Ident, &Type)> {
         self.current_scope().lookup_ident(ident)
     }
 
+    /// Lookup identifier by name and return the name and type.
+    /// This function searches symbol recursively.
     pub fn lookup(&self, ident: &Ident) -> Option<(&Ident, &Type)> {
         for scope in &self.scope {
             match scope.lookup_ident(ident) {
@@ -91,8 +91,16 @@ impl CheckContext {
         None
     }
 
+    /// Define new symbol in current scope
+    /// Return previous defined identifier if redefinition detected.
     pub fn define_in_current(&mut self, ident: &Ident, idtype: &Type) -> Option<&Ident> {
-        self.current_scope_mut().define(ident, idtype)
+        self.current_scope_mut().define(ident, idtype, false)
+    }
+
+    /// Define new symbol in current scope forcibly
+    /// Return previous defined identifier if redefinition detected.
+    pub fn rewrite_in_current(&mut self, ident: &Ident, idtype: &Type) {
+        let _ = self.current_scope_mut().define(ident, idtype, true);
     }
 
     pub fn is_tracing(&self) -> bool {
