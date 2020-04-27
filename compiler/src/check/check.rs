@@ -3,7 +3,7 @@ use crate::syntax::tree::{Program, Entry, Header, Stmt, VarInit, Ident, Expr, Pa
 use crate::check::context::{CheckContext, ScopeId};
 use crate::error::CompileError;
 use crate::check::{CheckError, CheckErrorVariant};
-use crate::check::infer_check::Type;
+use crate::check::infer_check::{Type, Types};
 
 pub fn checker_main(input: &Program) -> CompileResult<()> {
     let mut ctx = CheckContext::new();
@@ -31,7 +31,7 @@ fn check_header(ctx: &mut CheckContext, hdr: &Header) -> CompileResult<()> {
         Header::Package(_) => Ok(()),
         Header::Using(_) => Ok(()),
         Header::Import(_, Some(id)) => {
-            check_redefinition(ctx, id, &Type::Any)
+            check_redefinition(ctx, id, &Types::Any.into_type())
         }
         Header::Import(_, _) => unreachable!("Desugar bug"),
     }
@@ -41,18 +41,21 @@ fn check_stmt(ctx: &mut CheckContext, stmt: &Stmt) -> CompileResult<Type> {
     match stmt {
         Stmt::Var(var) => {
             check_var_init(ctx, var)?;
-            Ok(Type::Void)
+            Ok(Types::Void.into_type())
         }
 
         Stmt::VarList(vars) => {
             check_vars_init(ctx, vars)?;
-            Ok(Type::Void)
+            Ok(Types::Void.into_type())
         }
 
         Stmt::Func(id, params, body) => {
             // first of all, build a fake function type
-            let args: Vec<Type> = params.iter().map(|_| Type::Any).collect();
-            check_redefinition(ctx, id, &Type::Applicable(Box::new(Type::Any), args.clone()))?;
+            let args: Vec<Type> = params.iter()
+                .map(|p| Types::Any.with_loc(p.to_loc()))
+                .collect();
+            check_redefinition(ctx, id, &Types::Applicable(
+                Box::new(Types::Any.into_type()), args.clone()).with_loc(id.to_loc()), )?;
 
             // second, enter the function scope and check params
             ctx.enter_scope(ScopeId::Func(id.text.clone()));
@@ -65,7 +68,8 @@ fn check_stmt(ctx: &mut CheckContext, stmt: &Stmt) -> CompileResult<Type> {
             // replace the fake function type with our new one.
             // this is defined in the function's scope, so
             // no redefinition will be reported.
-            check_redefinition(ctx, id, &Type::Applicable(Box::new(ret), args.clone()))?;
+            check_redefinition(ctx, id, &Types::Applicable(Box::new(ret), args.clone())
+                .with_loc(id.to_loc()))?;
 
             // recheck the body and get the real return type
             // in theory, this is meaningful only when:
@@ -77,68 +81,71 @@ fn check_stmt(ctx: &mut CheckContext, stmt: &Stmt) -> CompileResult<Type> {
             // we shouldn't use check_redefinition because what we are doing
             // is actually redefining the function itself.
             ctx.leave_scope();
-            ctx.define_in_current(id, &Type::Applicable(Box::new(ret), args.clone()));
-            Ok(Type::Void)
+            ctx.define_in_current(id, &Types::Applicable(Box::new(ret), args.clone())
+                .with_loc(id.to_loc()));
+            Ok(Types::Void.into_type())
         }
 
         Stmt::Namespace(id, body) => {
-            check_redefinition(ctx, id, &Type::Any)?;
+            check_redefinition(ctx, id, &Types::Any.with_loc(id.to_loc()))?;
             ctx.enter_scope(ScopeId::Namespace(id.text.clone()));
             check_body(ctx, body)?;
             ctx.leave_scope();
-            Ok(Type::Void)
+            Ok(Types::Void.into_type())
         }
 
         Stmt::Struct(id, extends, body) => {
             // TODO: store struct information
-            check_redefinition(ctx, id, &Type::Any)?;
+            check_redefinition(ctx, id, &Types::Any.with_loc(id.to_loc()))?;
             if let Some(expr) = extends {
                 check_expr(ctx, expr)?;
             }
             ctx.enter_scope(ScopeId::Struct(id.text.clone()));
             check_body(ctx, body)?;
             ctx.leave_scope();
-            Ok(Type::Void)
+            Ok(Types::Void.into_type())
         }
 
         Stmt::Block(body) => {
             ctx.enter_scope(ScopeId::UnnamedBlock);
             check_body(ctx, body)?;
             ctx.leave_scope();
-            Ok(Type::Void)
+            Ok(Types::Void.into_type())
         }
 
         Stmt::Return(expr) => {
             if let Some(expr) = expr {
-                let t = check_expr(ctx, expr)?;
-                t.not_void(&expr.to_loc())?;
+                let mut t = check_expr(ctx, expr)?;
+                t.loc = expr.to_loc();
+                t.not_void()?;
                 Ok(t)
             } else {
-                Ok(Type::Void)
+                Ok(Types::Void.into_type())
             }
         }
 
         Stmt::Throw(expr) => {
-            check_expr(ctx, expr)?.not_void(&expr.to_loc())?;
-            Ok(Type::Void)
+            check_expr(ctx, expr)?.not_void()?;
+            Ok(Types::Void.into_type())
         }
 
-        Stmt::Try(loc, tbody, id, cbody) => {
+        Stmt::Try(_, tbody, id, cbody) => {
             // check try-body
             ctx.enter_scope(ScopeId::UnnamedBlock);
-            let t = check_body(ctx, tbody)?;
+            let t_ret = check_body(ctx, tbody)?;
             ctx.leave_scope();
             // check catch-body
             ctx.enter_scope(ScopeId::UnnamedBlock);
             // fyou dynamic typing! exception type?
-            check_redefinition(ctx, id, &Type::Any)?;
-            check_body(ctx, cbody)?.against(&t, loc)?;
+            check_redefinition(ctx, id, &Types::Any.with_loc(id.to_loc()))?;
+            let c_ret = check_body(ctx, cbody)?;
+            c_ret.against(&t_ret)?;
             ctx.leave_scope();
-            Ok(t)
+            Ok(t_ret)
         }
 
-        Stmt::If(loc, cond, t, f) => {
-            check_expr(ctx, cond)?.against(&Type::Bool, &cond.to_loc())?;
+        Stmt::If(_, cond, t, f) => {
+            check_expr(ctx, cond)?.against(&Types::Bool.into_type())?;
             // check if-true branch
             ctx.enter_scope(ScopeId::UnnamedBlock);
             let t_ret = check_body(ctx, t)?;
@@ -146,7 +153,8 @@ fn check_stmt(ctx: &mut CheckContext, stmt: &Stmt) -> CompileResult<Type> {
             // check if-false branch
             if let Some(else_body) = f {
                 ctx.enter_scope(ScopeId::UnnamedBlock);
-                check_body(ctx, else_body)?.against(&t_ret, loc)?;
+                let f_ret = check_body(ctx, else_body)?;
+                f_ret.against(&t_ret)?;
                 ctx.leave_scope();
             }
 
@@ -154,13 +162,14 @@ fn check_stmt(ctx: &mut CheckContext, stmt: &Stmt) -> CompileResult<Type> {
         }
 
         Stmt::Switch(expr, cases) => {
+            // TODO: check return in switch-case
             check_expr(ctx, expr)?;
             check_switch_cases(ctx, cases)?;
-            Ok(Type::Void)
+            Ok(Types::Void.into_type())
         }
 
         Stmt::While(cond, body) => {
-            check_expr(ctx, cond)?.against(&Type::Bool, &cond.to_loc())?;
+            check_expr(ctx, cond)?.against(&Types::Bool.into_type())?;
             ctx.enter_scope(ScopeId::UnnamedBlock);
             ctx.enter_loop();
             let t = check_body(ctx, body)?;
@@ -171,7 +180,7 @@ fn check_stmt(ctx: &mut CheckContext, stmt: &Stmt) -> CompileResult<Type> {
 
         Stmt::Loop(cond, body) => {
             if let Some(cond) = cond {
-                check_expr(ctx, cond)?.against(&Type::Bool, &cond.to_loc())?;
+                check_expr(ctx, cond)?.against(&Types::Bool.into_type())?;
             }
             ctx.enter_scope(ScopeId::UnnamedBlock);
             ctx.enter_loop();
@@ -185,7 +194,7 @@ fn check_stmt(ctx: &mut CheckContext, stmt: &Stmt) -> CompileResult<Type> {
             ctx.enter_scope(ScopeId::UnnamedBlock);
             let t = check_expr(ctx, init)?;
             check_redefinition(ctx, id, &t)?;
-            check_expr(ctx, cond)?.against(&Type::Bool, &cond.to_loc())?;
+            check_expr(ctx, cond)?.against(&Types::Bool.into_type())?;
             check_expr(ctx, step)?;
             ctx.enter_loop();
             let t = check_body(ctx, body)?;
@@ -199,7 +208,7 @@ fn check_stmt(ctx: &mut CheckContext, stmt: &Stmt) -> CompileResult<Type> {
             if !ctx.is_in_loop() {
                 raise_dangling_loop_control_error(id)?;
             }
-            Ok(Type::Void)
+            Ok(Types::Void.into_type())
         }
 
         Stmt::ExprStmt(expr) => check_expr(ctx, expr),
@@ -229,7 +238,7 @@ fn check_var_init(ctx: &mut CheckContext, var_init: &VarInit) -> CompileResult<(
             for id in ids {
                 // fyou dynamic typing!
                 // we can't know what's inside at compile time
-                check_redefinition(ctx, id, &Type::Any)?;
+                check_redefinition(ctx, id, &Types::Any.with_loc(id.to_loc()))?;
             }
             Ok(())
         }
@@ -239,18 +248,21 @@ fn check_var_init(ctx: &mut CheckContext, var_init: &VarInit) -> CompileResult<(
 pub(crate) fn check_params(ctx: &mut CheckContext, params: &Vec<Param>) -> CompileResult<()> {
     for param in params {
         match param {
-            Param::Normal(id) => check_redefinition(ctx, id, &Type::Any)?,
-            Param::Varargs(id) => check_redefinition(ctx, id, &Type::Any)?,
+            Param::Normal(id) =>
+                check_redefinition(ctx, id, &Types::Any.with_loc(id.to_loc()))?,
+            Param::Varargs(id) =>
+                check_redefinition(ctx, id, &Types::Any.with_loc(id.to_loc()))?,
         }
     }
     Ok(())
 }
 
 fn check_body(ctx: &mut CheckContext, body: &Body) -> CompileResult<Type> {
-    let mut t = Type::Void;
+    // TODO: block location
+    let mut t = Types::Void.into_type();
     for stmt in body {
         let new = check_stmt(ctx, stmt)?;
-        if new != Type::Void {
+        if new.ty != Types::Void {
             t = new;
         }
     }

@@ -205,6 +205,21 @@ impl ToLoc for Expr {
     }
 }
 
+impl ToLoc for Param {
+    fn to_loc(&self) -> Loc {
+        match self {
+            Param::Normal(id) |
+            Param::Varargs(id) => id.to_loc(),
+        }
+    }
+}
+
+impl ToLoc for Ident {
+    fn to_loc(&self) -> Loc {
+        self.abs_loc.clone()
+    }
+}
+
 impl Ident {
     pub fn new(span: pest::Span, text: &str) -> Self {
         Ident {

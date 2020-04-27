@@ -5,7 +5,7 @@ use crate::check::infer_check::Type;
 
 mod context;
 mod check;
-mod infer_check;
+pub(crate) mod infer_check;
 
 #[cfg(test)]
 mod tests;
@@ -54,8 +54,8 @@ impl Display for CheckErrorVariant {
             CheckErrorVariant::TypeMismatch(_, expected, actual) =>
                 match expected {
                     Some(expected) =>
-                        write!(f, "expected type '{:?}', but got '{:?}'", expected, actual),
-                    _ => write!(f, "unexpected type '{:?}'", actual)
+                        write!(f, "expected type '{}', but got '{}'", expected.ty, actual.ty),
+                    _ => write!(f, "unexpected type '{}'", actual.ty)
                 }
 
             CheckErrorVariant::ArgcMismatch(_, expected, actual) =>

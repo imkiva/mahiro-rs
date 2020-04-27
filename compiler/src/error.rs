@@ -1,8 +1,9 @@
 use crate::syntax::parse::{ParseError, ParseErrorVariant};
-use crate::check::{CheckError, CheckErrorVariant};
+use crate::check::CheckError;
 use crate::syntax::tree::Loc;
 use crate::check::CheckErrorVariant::{Redefinition, DanglingLoopControl, BottomTypedExpr, TypeMismatch, ArgcMismatch};
 use std::cmp::{min, max};
+use crate::check::infer_check::Type;
 
 #[derive(Debug)]
 pub enum CompileError {
@@ -27,24 +28,28 @@ type LocRange = (usize, usize);
 fn format_check_error(err: CheckError, path: &str, input: &str) -> String {
     match err.variant {
         Redefinition(Loc::InSource(ss, se), Loc::InSource(es, ee), _) =>
-            format_check_error_with_loc_range(err, path, input, (ss, se), (es, ee)),
+            format_check_error_visual(err, path, input, (ss, se), (es, ee)),
+
+        TypeMismatch(Loc::InSource(s, e), Some(
+            Type { ref ty, loc: Loc::InSource(es, ee) }), _) =>
+            format_check_error_visual(err, path, input, (es, ee), (s, e)),
 
         DanglingLoopControl(Loc::InSource(s, e), _) |
         BottomTypedExpr(Loc::InSource(s, e)) |
         TypeMismatch(Loc::InSource(s, e), _, _) |
         ArgcMismatch(Loc::InSource(s, e), _, _) =>
-            format_check_error_with_loc(err, path, input, (s, e)),
+            format_check_error_at_pos(err, path, input, (s, e)),
 
         _ => format!("{}", err.with_path(path)),
     }
 }
 
-fn format_check_error_with_loc_range(err: CheckError, path: &str, input: &str,
-                                     loc1: LocRange, loc2: LocRange) -> String {
-    format_check_error_with_loc(err, path, input, (loc1.0, loc2.0))
+fn format_check_error_visual(err: CheckError, path: &str, input: &str,
+                             loc1: LocRange, loc2: LocRange) -> String {
+    format_check_error_at_pos(err, path, input, (loc1.0, loc2.0))
 }
 
-fn format_check_error_with_loc(err: CheckError, path: &str, input: &str, loc: LocRange) -> String {
+fn format_check_error_at_pos(err: CheckError, path: &str, input: &str, loc: LocRange) -> String {
     let start = min(loc.0, loc.1);
     let end = max(loc.0, loc.1);
     let start = pest::Position::new(input, start).unwrap();
