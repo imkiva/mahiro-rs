@@ -1,5 +1,5 @@
 use crate::check::context::{CheckContext, ScopeId};
-use crate::syntax::tree::{Expr, Lit, Loc, ToLoc};
+use crate::syntax::tree::{Expr, Lit, Loc, ToLoc, Op};
 use crate::CompileResult;
 use crate::check::check::{check_params, raise_bottom_typed_expr_error, raise_type_mismatch_error, raise_argc_mismatch_error};
 
@@ -32,11 +32,11 @@ impl Type {
         }
     }
 
-    pub fn against(&self, expected: &Type, loc: &Loc) -> CompileResult<()> {
+    pub fn against(&self, expected: &Type, loc: &Loc) -> CompileResult<Type> {
         match (self, expected) {
             (Type::Any, _) |
-            (_, Type::Any) => Ok(()),
-            (lhs, rhs) if lhs == rhs => Ok(()),
+            (_, Type::Any) => Ok(Type::Any),
+            (lhs, rhs) if lhs == rhs => Ok(expected.clone()),
             _ => {
                 raise_type_mismatch_error(loc.clone(),
                                           Some(expected.clone()),
@@ -99,12 +99,48 @@ pub fn check_expr(ctx: &mut CheckContext, expr: &Expr) -> CompileResult<Type> {
             }
         }
 
-        // TODO
-        // Expr::Unary(_, _) => {}
-        // Expr::Binary(_, _, _) => {}
-        // Expr::Ternary(_, _, _) => {}
-        // Expr::Question(_, _) => {}
-        _ => Ok(Type::Any),
+        Expr::Unary(_, op, expr) => {
+            let expr_loc = expr.to_loc();
+            let t = check_expr(ctx, expr.as_ref())?;
+            t.not_void(&expr_loc)?;
+            match op {
+                Op::Not => t.against(&Type::Bool, &expr_loc),
+                _ => Ok(Type::Any)
+            }
+        }
+
+        Expr::Binary(_, op, lhs, rhs) => {
+            let t = check_expr(ctx, lhs.as_ref())?;
+            t.not_void(&lhs.to_loc())?;
+            match op {
+                Op::Access => {
+                    check_expr(ctx, rhs.as_ref())?.not_void(&rhs.to_loc())?;
+                    Ok(Type::Any)
+                },
+                Op::Index => {
+                    check_expr(ctx, rhs.as_ref())?.against(&Type::Number, &rhs.to_loc())?;
+                    Ok(Type::Any)
+                }
+                _ => {
+                    check_expr(ctx, rhs.as_ref())?.against(&t, &rhs.to_loc())?;
+                    Ok(t)
+                }
+            }
+        }
+
+        Expr::Ternary(_, cond, t, f) => {
+            check_expr(ctx, cond.as_ref())?.against(&Type::Bool, &cond.to_loc())?;
+            let t_ret = check_expr(ctx, t.as_ref())?;
+            t_ret.not_void(&t.to_loc())?;
+            check_expr(ctx, f.as_ref())?.against(&t_ret, &f.to_loc())?;
+            Ok(Type::Any)
+        }
+
+        Expr::Question(_, value, null) => {
+            check_expr(ctx, value.as_ref())?.not_void(&value.to_loc())?;
+            check_expr(ctx, null.as_ref())?.not_void(&null.to_loc())?;
+            Ok(Type::Any)
+        }
     }
 }
 

@@ -52,7 +52,7 @@ pub enum Expr {
 
     // cond ? if_true : if_false
     Ternary(Loc, Box<Expr>, Box<Expr>, Box<Expr>),
-    // cond ? if_false
+    // value ? if_null
     Question(Loc, Box<Expr>, Box<Expr>),
 }
 
