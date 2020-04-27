@@ -374,21 +374,25 @@ fn unescape_char(ch: char) -> char {
 }
 
 fn build_primary_expr(prefix: Expr, postfix: Pair<Rule>) -> Expr {
-    let postfix_loc = postfix.as_span().to_loc();
+    let expr_loc = match (prefix.to_loc(), postfix.as_span().to_loc()) {
+        (Loc::InSource(start, _), Loc::InSource(_, end)) =>
+            Loc::InSource(start, end),
+        (_, postfix_loc) => postfix_loc
+    };
 
     match postfix.as_rule() {
-        Rule::apply => Apply(postfix_loc,
+        Rule::apply => Apply(expr_loc,
                              Box::new(prefix),
                              fst!(postfix)
                                  .map(|args| args.parse_to())
                                  .unwrap_or_default()),
 
-        Rule::index_access => Binary(postfix_loc,
+        Rule::index_access => Binary(expr_loc,
                                      Op::Index,
                                      Box::new(prefix),
                                      Box::new(fst!(postfix).unwrap().parse_to())),
 
-        Rule::member_access => Binary(postfix_loc,
+        Rule::member_access => Binary(expr_loc,
                                       Op::Access,
                                       Box::new(prefix),
                                       Box::new(Id(fst!(postfix).unwrap().parse_to()))),
@@ -396,20 +400,20 @@ fn build_primary_expr(prefix: Expr, postfix: Pair<Rule>) -> Expr {
         Rule::mapping => {
             let key = Box::new(prefix);
             let value = Box::new(fst!(postfix).unwrap().parse_to());
-            Literal(postfix_loc, Lit::Pair(key, value))
+            Literal(expr_loc, Lit::Pair(key, value))
         }
 
         Rule::assign => {
             let mut iter = postfix.into_inner().into_iter();
             let op = iter.next().unwrap();
             let expr = iter.next().unwrap();
-            Assign(postfix_loc,
+            Assign(expr_loc,
                    op.parse_to(),
                    Box::new(prefix),
                    Box::new(expr.parse_to()))
         }
 
-        Rule::flatten => Unary(postfix_loc,
+        Rule::flatten => Unary(expr_loc,
                                Op::Flatten,
                                Box::new(prefix)),
 
