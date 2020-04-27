@@ -227,8 +227,7 @@ fn check_vars_init(ctx: &mut CheckContext, vars_init: &Vec<VarInit>) -> CompileR
 fn check_var_init(ctx: &mut CheckContext, var_init: &VarInit) -> CompileResult<()> {
     match var_init {
         VarInit::Simple(id, expr) => {
-            let mut t = check_expr(ctx, expr)?;
-            t.loc = expr.to_loc();
+            let t = check_expr(ctx, expr)?;
             t.not_void()?;
             check_redefinition(ctx, id, &t)?;
             Ok(())
@@ -236,9 +235,7 @@ fn check_var_init(ctx: &mut CheckContext, var_init: &VarInit) -> CompileResult<(
         VarInit::Structured(ids, expr) => {
             // fyou dynamic typing!
             // we can do nothing with this type!
-            let mut t = check_expr(ctx, expr)?;
-            t.loc = expr.to_loc();
-            t.not_void()?;
+            check_expr(ctx, expr)?.not_void()?;
             for id in ids {
                 // fyou dynamic typing!
                 // we can't know what's inside at compile time

@@ -118,16 +118,19 @@ pub fn check_expr(ctx: &mut CheckContext, expr: &Expr) -> CompileResult<Type> {
         },
 
         Expr::Group(loc, exprs) => {
-            let mut t = Types::Void.with_loc(loc.clone());
+            let mut t = Types::Void.into_type();
             for expr in exprs {
                 t = check_expr(ctx, expr)?;
             }
+            t.loc = loc.clone();
             Ok(t)
         }
 
-        Expr::Assign(_, _, lhs, rhs) => {
+        Expr::Assign(loc, _, lhs, rhs) => {
             check_expr(ctx, rhs.as_ref())?.not_void()?;
-            check_expr(ctx, lhs.as_ref())
+            let mut t = check_expr(ctx, lhs.as_ref())?;
+            t.loc = loc.clone();
+            Ok(t)
         }
 
         Expr::Apply(loc, id, args) => {
@@ -144,7 +147,9 @@ pub fn check_expr(ctx: &mut CheckContext, expr: &Expr) -> CompileResult<Type> {
                     for (arg, t) in args.iter().zip(types) {
                         check_expr(ctx, arg)?.against(&t)?;
                     }
-                    Ok(ret.as_ref().clone())
+                    let mut ret = ret.as_ref().clone();
+                    ret.loc = loc.clone();
+                    Ok(ret)
                 }
                 _ => unreachable!(),
             }
@@ -160,7 +165,8 @@ pub fn check_expr(ctx: &mut CheckContext, expr: &Expr) -> CompileResult<Type> {
         }
 
         Expr::Binary(loc, op, lhs, rhs) => {
-            let t = check_expr(ctx, lhs.as_ref())?;
+            let mut t = check_expr(ctx, lhs.as_ref())?;
+            t.loc = loc.clone();
             t.not_void()?;
             match op {
                 Op::Access => {
