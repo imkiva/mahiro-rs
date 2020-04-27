@@ -227,13 +227,14 @@ fn check_var_init(ctx: &mut CheckContext, var_init: &VarInit) -> CompileResult<(
     match var_init {
         VarInit::Simple(id, expr) => {
             let t = check_expr(ctx, expr)?;
+            t.not_void()?;
             check_redefinition(ctx, id, &t)?;
             Ok(())
         }
         VarInit::Structured(ids, expr) => {
             // fyou dynamic typing!
             // we can do nothing with this type!
-            let _ = check_expr(ctx, expr)?;
+            check_expr(ctx, expr)?.not_void()?;
             for id in ids {
                 // fyou dynamic typing!
                 // we can't know what's inside at compile time
