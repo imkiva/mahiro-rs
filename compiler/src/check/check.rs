@@ -123,7 +123,7 @@ fn check_stmt(ctx: &mut CheckContext, stmt: &Stmt) -> CompileResult<Type> {
             Ok(Type::Void)
         }
 
-        Stmt::Try(tbody, id, cbody) => {
+        Stmt::Try(loc, tbody, id, cbody) => {
             // check try-body
             ctx.enter_scope(ScopeId::UnnamedBlock);
             let t = check_body(ctx, tbody)?;
@@ -132,12 +132,12 @@ fn check_stmt(ctx: &mut CheckContext, stmt: &Stmt) -> CompileResult<Type> {
             ctx.enter_scope(ScopeId::UnnamedBlock);
             // fyou dynamic typing! exception type?
             check_redefinition(ctx, id, &Type::Any)?;
-            check_body(ctx, cbody)?.against(&t, &Loc::Injected)?;
+            check_body(ctx, cbody)?.against(&t, loc)?;
             ctx.leave_scope();
             Ok(t)
         }
 
-        Stmt::If(cond, t, f) => {
+        Stmt::If(loc, cond, t, f) => {
             check_expr(ctx, cond)?.against(&Type::Bool, &cond.to_loc())?;
             // check if-true branch
             ctx.enter_scope(ScopeId::UnnamedBlock);
@@ -146,7 +146,7 @@ fn check_stmt(ctx: &mut CheckContext, stmt: &Stmt) -> CompileResult<Type> {
             // check if-false branch
             if let Some(else_body) = f {
                 ctx.enter_scope(ScopeId::UnnamedBlock);
-                check_body(ctx, else_body)?.against(&t_ret, &Loc::Injected)?;
+                check_body(ctx, else_body)?.against(&t_ret, loc)?;
                 ctx.leave_scope();
             }
 

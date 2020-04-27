@@ -106,8 +106,8 @@ pub enum Stmt {
     // common statements
     Return(Option<Expr>),
     Throw(Expr),
-    Try(Body, Ident, Body),
-    If(Expr, Body, Option<Body>),
+    Try(Loc, Body, Ident, Body),
+    If(Loc, Expr, Body, Option<Body>),
     Switch(Expr, Vec<Case>),
     While(Expr, Body),
     Loop(Option<Expr>, Body),

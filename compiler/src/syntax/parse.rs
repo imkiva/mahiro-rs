@@ -421,6 +421,8 @@ fn build_primary_expr(prefix: Expr, postfix: Pair<Rule>) -> Expr {
 
 impl ParseTo<Stmt> for Pair<'_, Rule> {
     fn parse_to(self) -> Stmt {
+        let self_loc = self.as_span().to_loc();
+
         match self.as_rule() {
             Rule::stmt => fst!(self).unwrap().parse_to(),
             Rule::cross_line_stmt => fst!(self).unwrap().parse_to(),
@@ -487,7 +489,7 @@ impl ParseTo<Stmt> for Pair<'_, Rule> {
                 let cond = iter.next().unwrap().parse_to();
                 let t = iter.next().unwrap().parse_to();
                 let f = iter.next().map(|f| f.parse_to());
-                If(cond, t, f)
+                If(self_loc, cond, t, f)
             }
 
             Rule::while_stmt => {
@@ -538,7 +540,7 @@ impl ParseTo<Stmt> for Pair<'_, Rule> {
                 let try_body = iter.next().unwrap().parse_to();
                 let id = iter.next().unwrap().parse_to();
                 let catch_body = iter.next().unwrap().parse_to();
-                Try(try_body, id, catch_body)
+                Try(self_loc, try_body, id, catch_body)
             }
 
             Rule::expr_stmt => {

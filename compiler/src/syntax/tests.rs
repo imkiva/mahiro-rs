@@ -681,6 +681,7 @@ mod parse {
         end");
         assert_eq!(prog, vec![
             StmtEntry(Try(
+                Loc::Injected,
                 vec![
                     ExprStmt(Apply(Loc::Injected, Box::new(Id(Ident::only("get"))), vec![]))
                 ],
@@ -706,18 +707,18 @@ mod parse {
         end");
         assert_eq!(prog, vec![
             StmtEntry(
-                If(Binary(Loc::Injected,
-                          Op::And,
-                          Box::new(Binary(
-                              Loc::Injected,
-                              Op::Gt,
-                              Box::new(Id(Ident::only("a"))),
-                              Box::new(Literal(Loc::Injected, Number(1.0))))),
-                          Box::new(Binary(
-                              Loc::Injected,
-                              Op::Lt,
-                              Box::new(Id(Ident::only("a"))),
-                              Box::new(Literal(Loc::Injected, Number(10.0)))))),
+                If(Loc::Injected, Binary(Loc::Injected,
+                                         Op::And,
+                                         Box::new(Binary(
+                                             Loc::Injected,
+                                             Op::Gt,
+                                             Box::new(Id(Ident::only("a"))),
+                                             Box::new(Literal(Loc::Injected, Number(1.0))))),
+                                         Box::new(Binary(
+                                             Loc::Injected,
+                                             Op::Lt,
+                                             Box::new(Id(Ident::only("a"))),
+                                             Box::new(Literal(Loc::Injected, Number(10.0)))))),
                    vec![
                        ExprStmt(Apply(Loc::Injected, Box::new(Id(Ident::only("yes"))), vec![])),
                    ],
@@ -736,18 +737,18 @@ mod parse {
         end");
         assert_eq!(prog, vec![
             StmtEntry(
-                If(Binary(Loc::Injected,
-                          Op::And,
-                          Box::new(Binary(
-                              Loc::Injected,
-                              Op::Gt,
-                              Box::new(Id(Ident::only("a"))),
-                              Box::new(Literal(Loc::Injected, Number(1.0))))),
-                          Box::new(Binary(
-                              Loc::Injected,
-                              Op::Lt,
-                              Box::new(Id(Ident::only("a"))),
-                              Box::new(Literal(Loc::Injected, Number(10.0)))))),
+                If(Loc::Injected, Binary(Loc::Injected,
+                                         Op::And,
+                                         Box::new(Binary(
+                                             Loc::Injected,
+                                             Op::Gt,
+                                             Box::new(Id(Ident::only("a"))),
+                                             Box::new(Literal(Loc::Injected, Number(1.0))))),
+                                         Box::new(Binary(
+                                             Loc::Injected,
+                                             Op::Lt,
+                                             Box::new(Id(Ident::only("a"))),
+                                             Box::new(Literal(Loc::Injected, Number(10.0)))))),
                    vec![
                        ExprStmt(Apply(Loc::Injected, Box::new(Id(Ident::only("yes"))), vec![])),
                    ],
@@ -1015,27 +1016,27 @@ mod desugar {
         let iter = assoc_id_from(&i);
 
         let init = Apply(Loc::Injected, Box::new(Binary(Loc::Injected,
-                                               Op::Access,
-                                               Box::new(Id(Ident::only("vec"))),
-                                               Box::new(Id(Ident::only("iterate"))))
+                                                        Op::Access,
+                                                        Box::new(Id(Ident::only("vec"))),
+                                                        Box::new(Id(Ident::only("iterate"))))
         ), vec![]);
 
         let cond = Apply(Loc::Injected, Box::new(Binary(Loc::Injected,
-                                               Op::Access,
-                                               Box::new(Id(iter.clone())),
-                                               Box::new(Id(Ident::only("is_valid"))))
+                                                        Op::Access,
+                                                        Box::new(Id(iter.clone())),
+                                                        Box::new(Id(Ident::only("is_valid"))))
         ), vec![]);
 
         let step = Apply(Loc::Injected, Box::new(Binary(Loc::Injected,
-                                               Op::Access,
-                                               Box::new(Id(iter.clone())),
-                                               Box::new(Id(Ident::only("next"))))
+                                                        Op::Access,
+                                                        Box::new(Id(iter.clone())),
+                                                        Box::new(Id(Ident::only("next"))))
         ), vec![]);
 
         let value = Apply(Loc::Injected, Box::new(Binary(Loc::Injected,
-                                                Op::Access,
-                                                Box::new(Id(iter.clone())),
-                                                Box::new(Id(Ident::only("get"))))
+                                                         Op::Access,
+                                                         Box::new(Id(iter.clone())),
+                                                         Box::new(Id(Ident::only("get"))))
         ), vec![]);
 
         let injected_assign = Var(Simple(i, value));
