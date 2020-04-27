@@ -1,7 +1,8 @@
 use crate::syntax::parse::{ParseError, ParseErrorVariant};
 use crate::check::CheckError;
-use crate::syntax::tree::AbsLoc;
+use crate::syntax::tree::Loc;
 use crate::check::CheckErrorVariant::{Redefinition, DanglingLoopControl};
+use std::cmp::{min, max};
 
 #[derive(Debug)]
 pub enum CompileError {
@@ -21,24 +22,28 @@ impl CompileError {
     }
 }
 
+type LocRange = (usize, usize);
+
 fn format_check_error(err: CheckError, path: &str, input: &str) -> String {
     match err.variant {
-        Redefinition(Some(prev), Some(curr), _) =>
-            format_check_error_with_loc_range(err, path, input, prev, curr),
-        DanglingLoopControl(Some(loc), _) =>
-            format_check_error_with_loc(err, path, input, loc),
+        Redefinition(Loc::InSource(ss, se), Loc::InSource(es, ee), _) =>
+            format_check_error_with_loc_range(err, path, input, (ss, se), (es, ee)),
+        DanglingLoopControl(Loc::InSource(s, e), _) =>
+            format_check_error_with_loc(err, path, input, (s, e)),
         _ => format!("{}", err.with_path(path)),
     }
 }
 
 fn format_check_error_with_loc_range(err: CheckError, path: &str, input: &str,
-                                     loc1: AbsLoc, loc2: AbsLoc) -> String {
+                                     loc1: LocRange, loc2: LocRange) -> String {
     format_check_error_with_loc(err, path, input, (loc1.0, loc2.0))
 }
 
-fn format_check_error_with_loc(err: CheckError, path: &str, input: &str, loc: AbsLoc) -> String {
-    let start = pest::Position::new(input, loc.0).unwrap();
-    let end = pest::Position::new(input, loc.1).unwrap();
+fn format_check_error_with_loc(err: CheckError, path: &str, input: &str, loc: LocRange) -> String {
+    let start = min(loc.0, loc.1);
+    let end = max(loc.0, loc.1);
+    let start = pest::Position::new(input, start).unwrap();
+    let end = pest::Position::new(input, end).unwrap();
     let error = ParseError::new_from_span(
         ParseErrorVariant::CustomError {
             message: format!("{}", err.variant),
@@ -65,7 +70,7 @@ mod tests {
         var nice = b";
         let err = CheckError {
             file: None,
-            variant: Redefinition(None, None, "nice".into()),
+            variant: Redefinition(Loc::Injected, Loc::Injected, "nice".into()),
         };
         let err = CompileError::CheckError(err);
         let msg = err.error_message("<stdin>", input);

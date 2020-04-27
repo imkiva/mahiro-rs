@@ -1,9 +1,11 @@
 use std::fmt::{Display, Formatter};
-use crate::syntax::tree::{AbsLoc, Program};
+use crate::syntax::tree::{Loc, Program};
 use crate::CompileResult;
+use crate::check::infer_check::Type;
 
 mod context;
-mod checker;
+mod check;
+mod infer_check;
 
 #[cfg(test)]
 mod tests;
@@ -21,8 +23,11 @@ pub struct CheckError {
 
 #[derive(Debug, Clone)]
 pub enum CheckErrorVariant {
-    Redefinition(Option<AbsLoc>, Option<AbsLoc>, String),
-    DanglingLoopControl(Option<AbsLoc>, String),
+    Redefinition(Loc, Loc, String),
+    DanglingLoopControl(Loc, String),
+    BottomTypedExpr(Loc),
+    TypeMismatch(Loc, Option<Type>, Type),
+    ArgcMismatch(Loc, usize, usize),
 }
 
 impl Display for CheckError {
@@ -44,13 +49,19 @@ impl Display for CheckErrorVariant {
                 write!(f, "redefinition of '{}'", name.as_str()),
             CheckErrorVariant::DanglingLoopControl(_, code) =>
                 write!(f, "'{}' should be inside loop statement", code.as_str()),
+            CheckErrorVariant::BottomTypedExpr(_) =>
+                write!(f, "the type of expression cannot be void"),
+            CheckErrorVariant::TypeMismatch(_, expected, actual) =>
+                write!(f, "expected type {:?}, but got {:?}", expected, actual),
+            CheckErrorVariant::ArgcMismatch(_, expected, actual) =>
+                write!(f, "expected argument count {:?}, but provided {:?}", expected, actual),
         }
     }
 }
 
 impl Checker {
     pub fn check(input: Program) -> CompileResult<Program> {
-        checker::checker_main(&input)?;
+        check::checker_main(&input)?;
         Ok(input)
     }
 }

@@ -1,5 +1,6 @@
-use std::collections::{VecDeque, HashSet};
+use std::collections::{VecDeque, HashMap};
 use crate::syntax::tree::Ident;
+use crate::check::infer_check::Type;
 
 #[derive(Clone, Debug)]
 pub enum ScopeId {
@@ -15,7 +16,7 @@ struct Scope {
     /// Scope id
     id: ScopeId,
     /// All defined identifiers
-    defined_idents: HashSet<Ident>,
+    defined_idents: HashMap<Ident, Type>,
     /// Are we inside a loop statement?
     in_loop: bool,
 }
@@ -41,17 +42,17 @@ impl Scope {
     }
 
     /// Lookup identifier by type.
-    pub fn lookup_ident(&self, ident: &Ident) -> Option<&Ident> {
-        self.defined_idents.get(ident)
+    pub fn lookup_ident(&self, ident: &Ident) -> Option<(&Ident, &Type)> {
+        self.defined_idents.get_key_value(ident)
     }
 
     /// Define new symbol in current scope
     /// Return previous defined identifier if redefinition detected.
-    pub fn define(&mut self, ident: &Ident) -> Option<&Ident> {
-        if self.defined_idents.contains(&ident) {
-            self.lookup_ident(&ident)
+    pub fn define(&mut self, ident: &Ident, idtype: &Type) -> Option<&Ident> {
+        if self.defined_idents.contains_key(&ident) {
+            self.lookup_ident(&ident).map(|p| p.0)
         } else {
-            let _ = self.defined_idents.insert(ident.clone());
+            let _ = self.defined_idents.insert(ident.clone(), idtype.clone());
             None
         }
     }
@@ -76,11 +77,11 @@ impl CheckContext {
         Self::default()
     }
 
-    pub fn lookup_in_current(&self, ident: &Ident) -> Option<&Ident> {
+    pub fn lookup_in_current(&self, ident: &Ident) -> Option<(&Ident, &Type)> {
         self.current_scope().lookup_ident(ident)
     }
 
-    pub fn lookup(&self, ident: &Ident) -> Option<&Ident> {
+    pub fn lookup(&self, ident: &Ident) -> Option<(&Ident, &Type)> {
         for scope in &self.scope {
             match scope.lookup_ident(ident) {
                 None => (),
@@ -90,8 +91,8 @@ impl CheckContext {
         None
     }
 
-    pub fn define_in_current(&mut self, ident: &Ident) -> Option<&Ident> {
-        self.current_scope_mut().define(ident)
+    pub fn define_in_current(&mut self, ident: &Ident, idtype: &Type) -> Option<&Ident> {
+        self.current_scope_mut().define(ident, idtype)
     }
 
     pub fn is_tracing(&self) -> bool {
