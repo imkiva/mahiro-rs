@@ -262,7 +262,6 @@ pub(crate) fn check_params(ctx: &mut CheckContext, params: &Vec<Param>) -> Compi
 }
 
 fn check_body(ctx: &mut CheckContext, body: &Body) -> CompileResult<Type> {
-    // TODO: block location
     let mut t = Types::Void.into_type();
     for stmt in body {
         let new = check_stmt(ctx, stmt)?;
