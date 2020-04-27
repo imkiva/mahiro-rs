@@ -22,7 +22,13 @@ struct Scope {
 
 #[derive(Clone, Debug, Default)]
 pub struct CheckContext {
+    /// Scope stack
     scope: VecDeque<Scope>,
+    /// Indentation depth we are in,
+    /// used for tracing check
+    depth: usize,
+    /// Are we tracing the check process?
+    trace_check: bool,
 }
 
 impl Scope {
@@ -70,24 +76,6 @@ impl CheckContext {
         Self::default()
     }
 
-    pub fn enter_scope(&mut self, scope_id: ScopeId) {
-        self.scope.push_front(Scope::new(scope_id));
-    }
-
-    pub fn leave_scope(&mut self) {
-        if let None = self.scope.pop_front() {
-            unreachable!("Checking stack underflow");
-        }
-    }
-
-    fn current_scope(&self) -> &Scope {
-        self.scope.front().expect("Checking stack underflow")
-    }
-
-    fn current_scope_mut(&mut self) -> &mut Scope {
-        self.scope.front_mut().expect("Checking stack underflow")
-    }
-
     pub fn lookup_in_current(&self, ident: &Ident) -> Option<&Ident> {
         self.current_scope().lookup_ident(ident)
     }
@@ -106,15 +94,45 @@ impl CheckContext {
         self.current_scope_mut().define(ident)
     }
 
-    pub fn is_in_loop(&self) -> bool {
-        self.current_scope().in_loop
+    pub fn is_tracing(&self) -> bool {
+        self.trace_check
+    }
+
+    pub fn set_tracing(&mut self, tracing: bool) {
+        self.trace_check = tracing;
+    }
+
+    pub fn enter_scope(&mut self, scope_id: ScopeId) {
+        self.depth += 1;
+        self.scope.push_front(Scope::new(scope_id));
+    }
+
+    pub fn leave_scope(&mut self) {
+        self.depth -= 1;
+        if let None = self.scope.pop_front() {
+            unreachable!("Checking stack underflow");
+        }
     }
 
     pub fn enter_loop(&mut self) {
+        self.depth += 1;
         self.current_scope_mut().enter_loop();
     }
 
     pub fn leave_loop(&mut self) {
+        self.depth -= 1;
         self.current_scope_mut().leave_loop();
+    }
+
+    pub fn is_in_loop(&self) -> bool {
+        self.current_scope().in_loop
+    }
+
+    fn current_scope(&self) -> &Scope {
+        self.scope.front().expect("Checking stack underflow")
+    }
+
+    fn current_scope_mut(&mut self) -> &mut Scope {
+        self.scope.front_mut().expect("Checking stack underflow")
     }
 }
