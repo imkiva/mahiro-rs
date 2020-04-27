@@ -109,11 +109,11 @@ impl Desugarable for Stmt {
             Throw(expr) =>
                 Throw(expr.desugar()),
 
-            Try(loc, tbody, id, cbody) =>
-                Try(loc, tbody.desugar(), id, cbody.desugar()),
+            Try(tbody, id, cbody) =>
+                Try(tbody.desugar(), id, cbody.desugar()),
 
-            If(loc, cond, t, f) =>
-                If(loc, cond.desugar(), t.desugar(), f.desugar()),
+            If(cond, t, f) =>
+                If(cond.desugar(), t.desugar(), f.desugar()),
 
             Switch(expr, cases) =>
                 Switch(expr.desugar(), cases.desugar()),

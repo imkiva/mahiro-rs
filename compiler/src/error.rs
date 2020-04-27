@@ -31,7 +31,7 @@ fn format_check_error(err: CheckError, path: &str, input: &str) -> String {
             format_check_error_visual(err, path, input, (ss, se), (es, ee)),
 
         TypeMismatch(Loc::InSource(s, e), Some(
-            Type { ref ty, loc: Loc::InSource(es, ee) }), _) =>
+            Type { ty: _, loc: Loc::InSource(es, ee) }), _) =>
             format_check_error_visual(err, path, input, (es, ee), (s, e)),
 
         DanglingLoopControl(Loc::InSource(s, e), _) |

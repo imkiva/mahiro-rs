@@ -141,10 +141,10 @@ impl Eliminable for Stmt {
             Struct(id, ex, body) =>
                 Some(Struct(id, ex.fold_with(ctx), body.eliminate_with(ctx))),
 
-            Try(loc, tbody, id, cbody) =>
-                Some(Try(loc, tbody.eliminate_with(ctx), id, cbody.eliminate_with(ctx))),
+            Try(tbody, id, cbody) =>
+                Some(Try(tbody.eliminate_with(ctx), id, cbody.eliminate_with(ctx))),
 
-            If(loc, cond, t, f) => {
+            If(cond, t, f) => {
                 let cond = cond.fold_with(ctx);
                 match &cond {
                     Literal(_, Bool(true)) => Block(t).eliminate_with(ctx),
@@ -152,7 +152,7 @@ impl Eliminable for Stmt {
                         Some(body) => Block(body).eliminate_with(ctx),
                         _ => None,
                     },
-                    _ => Some(If(loc, cond, t.eliminate_with(ctx), {
+                    _ => Some(If(cond, t.eliminate_with(ctx), {
                         let f = f.eliminate_with(ctx);
                         match &f {
                             Some(v) if v.len() == 0 => None,

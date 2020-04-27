@@ -129,7 +129,7 @@ fn check_stmt(ctx: &mut CheckContext, stmt: &Stmt) -> CompileResult<Type> {
             Ok(Types::Void.into_type())
         }
 
-        Stmt::Try(_, tbody, id, cbody) => {
+        Stmt::Try(tbody, id, cbody) => {
             // check try-body
             ctx.enter_scope(ScopeId::UnnamedBlock);
             let t_ret = check_body(ctx, tbody)?;
@@ -144,7 +144,7 @@ fn check_stmt(ctx: &mut CheckContext, stmt: &Stmt) -> CompileResult<Type> {
             Ok(t_ret)
         }
 
-        Stmt::If(_, cond, t, f) => {
+        Stmt::If(cond, t, f) => {
             check_expr(ctx, cond)?.against(&Types::Bool.into_type())?;
             // check if-true branch
             ctx.enter_scope(ScopeId::UnnamedBlock);

@@ -681,7 +681,6 @@ mod parse {
         end");
         assert_eq!(prog, vec![
             StmtEntry(Try(
-                Loc::Injected,
                 vec![
                     ExprStmt(Apply(Loc::Injected, Box::new(Id(Ident::only("get"))), vec![]))
                 ],
@@ -707,7 +706,7 @@ mod parse {
         end");
         assert_eq!(prog, vec![
             StmtEntry(
-                If(Loc::Injected, Binary(Loc::Injected,
+                If(Binary(Loc::Injected,
                                          Op::And,
                                          Box::new(Binary(
                                              Loc::Injected,
@@ -737,7 +736,7 @@ mod parse {
         end");
         assert_eq!(prog, vec![
             StmtEntry(
-                If(Loc::Injected, Binary(Loc::Injected,
+                If(Binary(Loc::Injected,
                                          Op::And,
                                          Box::new(Binary(
                                              Loc::Injected,
