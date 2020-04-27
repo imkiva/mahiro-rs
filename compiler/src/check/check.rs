@@ -89,9 +89,9 @@ fn check_stmt(ctx: &mut CheckContext, stmt: &Stmt) -> CompileResult<Type> {
         Stmt::Namespace(id, body) => {
             check_redefinition(ctx, id, &Types::Any.with_loc(id.to_loc()))?;
             ctx.enter_scope(ScopeId::Namespace(id.text.clone()));
-            check_body(ctx, body)?;
+            let t = check_body(ctx, body)?;
             ctx.leave_scope();
-            Ok(Types::Void.into_type())
+            Ok(t)
         }
 
         Stmt::Struct(id, extends, body) => {
@@ -108,9 +108,9 @@ fn check_stmt(ctx: &mut CheckContext, stmt: &Stmt) -> CompileResult<Type> {
 
         Stmt::Block(body) => {
             ctx.enter_scope(ScopeId::UnnamedBlock);
-            check_body(ctx, body)?;
+            let t = check_body(ctx, body)?;
             ctx.leave_scope();
-            Ok(Types::Void.into_type())
+            Ok(t)
         }
 
         Stmt::Return(expr) => {
@@ -162,10 +162,9 @@ fn check_stmt(ctx: &mut CheckContext, stmt: &Stmt) -> CompileResult<Type> {
         }
 
         Stmt::Switch(expr, cases) => {
-            // TODO: check return in switch-case
-            check_expr(ctx, expr)?;
-            check_switch_cases(ctx, cases)?;
-            Ok(Types::Void.into_type())
+            check_expr(ctx, expr)?.not_void()?;
+            let t= check_switch_cases(ctx, cases)?;
+            Ok(t)
         }
 
         Stmt::While(cond, body) => {
@@ -269,23 +268,32 @@ fn check_body(ctx: &mut CheckContext, body: &Body) -> CompileResult<Type> {
     Ok(t)
 }
 
-fn check_switch_cases(ctx: &mut CheckContext, cases: &Vec<Case>) -> CompileResult<()> {
+fn check_switch_cases(ctx: &mut CheckContext, cases: &Vec<Case>) -> CompileResult<Type> {
+    let mut t = Types::Any.into_type();
     for case in cases {
-        match case {
-            Case::Sth(expr, body) => {
-                check_expr(ctx, expr)?;
-                ctx.enter_scope(ScopeId::UnnamedBlock);
-                check_body(ctx, body)?;
-                ctx.leave_scope();
-            }
-            Case::Dft(body) => {
-                ctx.enter_scope(ScopeId::UnnamedBlock);
-                check_body(ctx, body)?;
-                ctx.leave_scope();
-            }
+        let new = check_switch_case(ctx, case)?;
+        new.against(&t)?;
+        t = new;
+    }
+    Ok(t)
+}
+
+fn check_switch_case(ctx: &mut CheckContext, case: &Case) -> CompileResult<Type> {
+    match case {
+        Case::Sth(expr, body) => {
+            check_expr(ctx, expr)?.not_void()?;
+            ctx.enter_scope(ScopeId::UnnamedBlock);
+            let new = check_body(ctx, body)?;
+            ctx.leave_scope();
+            Ok(new)
+        }
+        Case::Dft(body) => {
+            ctx.enter_scope(ScopeId::UnnamedBlock);
+            let new = check_body(ctx, body)?;
+            ctx.leave_scope();
+            Ok(new)
         }
     }
-    Ok(())
 }
 
 fn check_expr(ctx: &mut CheckContext, expr: &Expr) -> CompileResult<Type> {
