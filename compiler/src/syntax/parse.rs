@@ -430,8 +430,7 @@ impl ParseTo<Stmt> for Pair<'_, Rule> {
             Rule::cross_line_stmt => fst!(self).unwrap().parse_to(),
             Rule::primary_stmt => fst!(self).unwrap().parse_to(),
             Rule::throw_stmt => Throw(fst!(self).unwrap().parse_to()),
-            Rule::return_stmt => Return(self.as_span().to_loc(),
-                                        fst!(self).map(|expr| expr.parse_to())),
+            Rule::return_stmt => Return(fst!(self).map(|expr| expr.parse_to())),
 
             // variable declaration
             Rule::var_decl => {

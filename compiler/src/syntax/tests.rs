@@ -645,7 +645,7 @@ mod parse {
     fn parse_return() {
         let prog = parse("return");
         assert_eq!(prog, vec![
-            StmtEntry(Return(Loc::Injected, None))
+            StmtEntry(Return(None))
         ]);
     }
 
@@ -653,7 +653,7 @@ mod parse {
     fn parse_return_sth() {
         let prog = parse("return i_single_push_minato_aqua");
         assert_eq!(prog, vec![
-            StmtEntry(Return(Loc::Injected, Some(Id(Ident::only("i_single_push_minato_aqua")))))
+            StmtEntry(Return(Some(Id(Ident::only("i_single_push_minato_aqua")))))
         ]);
     }
 
@@ -707,17 +707,17 @@ mod parse {
         assert_eq!(prog, vec![
             StmtEntry(
                 If(Binary(Loc::Injected,
-                          Op::And,
-                          Box::new(Binary(
-                              Loc::Injected,
-                              Op::Gt,
-                              Box::new(Id(Ident::only("a"))),
-                              Box::new(Literal(Loc::Injected, Number(1.0))))),
-                          Box::new(Binary(
-                              Loc::Injected,
-                              Op::Lt,
-                              Box::new(Id(Ident::only("a"))),
-                              Box::new(Literal(Loc::Injected, Number(10.0)))))),
+                                         Op::And,
+                                         Box::new(Binary(
+                                             Loc::Injected,
+                                             Op::Gt,
+                                             Box::new(Id(Ident::only("a"))),
+                                             Box::new(Literal(Loc::Injected, Number(1.0))))),
+                                         Box::new(Binary(
+                                             Loc::Injected,
+                                             Op::Lt,
+                                             Box::new(Id(Ident::only("a"))),
+                                             Box::new(Literal(Loc::Injected, Number(10.0)))))),
                    vec![
                        ExprStmt(Apply(Loc::Injected, Box::new(Id(Ident::only("yes"))), vec![])),
                    ],
@@ -737,17 +737,17 @@ mod parse {
         assert_eq!(prog, vec![
             StmtEntry(
                 If(Binary(Loc::Injected,
-                          Op::And,
-                          Box::new(Binary(
-                              Loc::Injected,
-                              Op::Gt,
-                              Box::new(Id(Ident::only("a"))),
-                              Box::new(Literal(Loc::Injected, Number(1.0))))),
-                          Box::new(Binary(
-                              Loc::Injected,
-                              Op::Lt,
-                              Box::new(Id(Ident::only("a"))),
-                              Box::new(Literal(Loc::Injected, Number(10.0)))))),
+                                         Op::And,
+                                         Box::new(Binary(
+                                             Loc::Injected,
+                                             Op::Gt,
+                                             Box::new(Id(Ident::only("a"))),
+                                             Box::new(Literal(Loc::Injected, Number(1.0))))),
+                                         Box::new(Binary(
+                                             Loc::Injected,
+                                             Op::Lt,
+                                             Box::new(Id(Ident::only("a"))),
+                                             Box::new(Literal(Loc::Injected, Number(10.0)))))),
                    vec![
                        ExprStmt(Apply(Loc::Injected, Box::new(Id(Ident::only("yes"))), vec![])),
                    ],
