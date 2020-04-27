@@ -1,4 +1,4 @@
-use crate::syntax::tree::{Expr, Entry, Stmt, Op, VarInit, Case, Body};
+use crate::syntax::tree::{Expr, Entry, Stmt, Op, VarInit, Case, Body, Loc};
 use crate::syntax::tree::Entry::StmtEntry;
 use crate::syntax::tree::Stmt::{Var, VarList, Func, Namespace, Struct, Block, Return, Throw, Try, If, Switch, While, Loop, For, ForEach, ExprStmt};
 use crate::syntax::tree::Expr::{Literal, Lambda, Alloc, Id, Group, Assign, Apply, Unary, Binary, Ternary, Question};
@@ -147,8 +147,8 @@ impl Eliminable for Stmt {
             If(cond, t, f) => {
                 let cond = cond.fold_with(ctx);
                 match &cond {
-                    Literal(Bool(true)) => Block(t).eliminate_with(ctx),
-                    Literal(Bool(false)) => match f {
+                    Literal(_, Bool(true)) => Block(t).eliminate_with(ctx),
+                    Literal(_, Bool(false)) => match f {
                         Some(body) => Block(body).eliminate_with(ctx),
                         _ => None,
                     },
@@ -165,8 +165,8 @@ impl Eliminable for Stmt {
             While(cond, body) => {
                 let cond = cond.fold_with(ctx);
                 match &cond {
-                    Literal(Bool(true)) => Some(Loop(None, body.eliminate_with(ctx))),
-                    Literal(Bool(false)) => None,
+                    Literal(_, Bool(true)) => Some(Loop(None, body.eliminate_with(ctx))),
+                    Literal(_, Bool(false)) => None,
                     _ => Some(While(cond, body.eliminate_with(ctx))),
                 }
             }
@@ -174,7 +174,7 @@ impl Eliminable for Stmt {
             Loop(Some(cond), body) => {
                 let cond = cond.fold_with(ctx);
                 match &cond {
-                    Literal(Bool(true)) => Block(body).eliminate_with(ctx),
+                    Literal(_, Bool(true)) => Block(body).eliminate_with(ctx),
                     _ => Some(Loop(Some(cond), body.eliminate_with(ctx))),
                 }
             }
@@ -182,7 +182,7 @@ impl Eliminable for Stmt {
             For(id, init, cond, step, body) => {
                 let cond = cond.fold_with(ctx);
                 match &cond {
-                    Literal(Bool(true)) => {
+                    Literal(_, Bool(true)) => {
                         let mut new_body = body.eliminate_with(ctx);
                         new_body.push(ExprStmt(step.fold_with(ctx)));
                         Some(Block(vec![
@@ -191,7 +191,7 @@ impl Eliminable for Stmt {
                         ]))
                     }
 
-                    Literal(Bool(false)) => None,
+                    Literal(_, Bool(false)) => None,
 
                     _ => Some(For(id, init.fold_with(ctx), cond,
                                   step.fold_with(ctx),
@@ -237,25 +237,25 @@ impl Foldable for Expr {
         match &self {
             // no optimization for syntax sugars
             // and they should not be reachable here.
-            Unary(Op::Add, rhs) |
-            Unary(Op::Sub, rhs) => {
+            Unary(_, Op::Add, rhs) |
+            Unary(_, Op::Sub, rhs) => {
                 match rhs.as_ref() {
-                    Literal(Number(_)) => unreachable!("sanity check"),
+                    Literal(_, Number(_)) => unreachable!("sanity check"),
                     _ => (),
                 }
             }
-            Literal(Array(_)) |
-            Literal(Pair(_, _)) =>
+            Literal(_, Array(_)) |
+            Literal(_, Pair(_, _)) =>
                 unreachable!("sanity check"),
             _ => (),
         }
 
         match self {
-            Unary(op, operand) =>
-                fold_unary(op, *operand.fold_with(ctx), ctx),
+            Unary(loc, op, operand) =>
+                fold_unary(loc, op, *operand.fold_with(ctx), ctx),
 
-            Binary(op, lhs, rhs) =>
-                fold_binary(op, *lhs.fold_with(ctx), *rhs.fold_with(ctx), ctx),
+            Binary(loc, op, lhs, rhs) =>
+                fold_binary(loc, op, *lhs.fold_with(ctx), *rhs.fold_with(ctx), ctx),
 
             Id(id) => {
                 match ctx.map(|c| c.try_resolve_constant(id.text.as_str())) {
@@ -264,73 +264,78 @@ impl Foldable for Expr {
                 }
             }
 
-            Lambda(cap, params, body) =>
-                Lambda(cap, params, body.fold_with(ctx)),
+            Lambda(loc, cap, params, body) =>
+                Lambda(loc, cap, params, body.fold_with(ctx)),
 
-            Alloc(ty, args) =>
-                Alloc(ty.fold_with(ctx), args.fold_with(ctx)),
+            Alloc(loc, ty, args) =>
+                Alloc(loc, ty.fold_with(ctx), args.fold_with(ctx)),
 
-            Group(exprs) =>
-                Group(exprs.fold_with(ctx)),
+            Group(loc, exprs) =>
+                Group(loc, exprs.fold_with(ctx)),
 
-            Assign(op, lhs, rhs) =>
-                Assign(op, lhs.fold_with(ctx), rhs.fold_with(ctx)),
+            Assign(loc, op, lhs, rhs) =>
+                Assign(loc, op, lhs.fold_with(ctx), rhs.fold_with(ctx)),
 
-            Apply(f, args) =>
-                Apply(f.fold_with(ctx), args.fold_with(ctx)),
+            Apply(loc, f, args) =>
+                Apply(loc, f.fold_with(ctx), args.fold_with(ctx)),
 
-            Ternary(cond, t, f) =>
-                Ternary(cond.fold_with(ctx), t.fold_with(ctx), f.fold_with(ctx)),
+            Ternary(loc, cond, t, f) =>
+                Ternary(loc, cond.fold_with(ctx), t.fold_with(ctx), f.fold_with(ctx)),
 
-            Question(cond, f) =>
-                Question(cond.fold_with(ctx), f.fold_with(ctx)),
+            Question(loc, cond, f) =>
+                Question(loc, cond.fold_with(ctx), f.fold_with(ctx)),
 
             expr => expr,
         }
     }
 }
 
-fn fold_unary(op: Op, operand: Expr, _: Option<&dyn FoldContext>) -> Expr {
+fn fold_unary(loc: Loc, op: Op, operand: Expr, _: Option<&dyn FoldContext>) -> Expr {
     match (&op, &operand) {
-        (Op::Not, Literal(Bool(b))) =>
-            Literal(Bool(!b.clone())),
-        _ => Unary(op, Box::new(operand)),
+        (Op::Not, Literal(_, Bool(b))) =>
+            Literal(loc, Bool(!b.clone())),
+        _ => Unary(loc, op, Box::new(operand)),
     }
 }
 
-fn fold_binary(op: Op, lhs: Expr, rhs: Expr, _: Option<&dyn FoldContext>) -> Expr {
-    match (&op, &lhs, &rhs) {
-        (Op::And, Literal(Bool(false)), Literal(Bool(_))) => Literal(Bool(false)),
-        (Op::And, Literal(Bool(true)), Literal(Bool(_))) => rhs,
-        (Op::Or, Literal(Bool(true)), Literal(Bool(_))) => Literal(Bool(true)),
-        (Op::Or, Literal(Bool(false)), Literal(Bool(_))) => rhs,
+fn fold_binary(loc: Loc, op: Op, lhs: Expr, rhs: Expr, _: Option<&dyn FoldContext>) -> Expr {
+    match (op, lhs, rhs) {
+        (Op::And, Literal(_, Bool(false)), Literal(_, Bool(_))) =>
+            Literal(loc, Bool(false)),
+        (Op::And, Literal(_, Bool(true)), rhs @ Literal(_, Bool(_))) =>
+            rhs,
+        (Op::Or, Literal(_, Bool(true)), Literal(_, Bool(_))) =>
+            Literal(loc, Bool(true)),
+        (Op::Or, Literal(_, Bool(false)), rhs @ Literal(_, Bool(_))) =>
+            rhs,
 
-        (Op::Add, Literal(Number(a)), Literal(Number(b))) =>
-            Literal(Number(a + b)),
-        (Op::Sub, Literal(Number(a)), Literal(Number(b))) =>
-            Literal(Number(a - b)),
-        (Op::Mul, Literal(Number(a)), Literal(Number(b))) =>
-            Literal(Number(a * b)),
-        (Op::Div, Literal(Number(a)), Literal(Number(b))) =>
-            Literal(Number(a / b)),
-        (Op::Mod, Literal(Number(a)), Literal(Number(b))) =>
-            Literal(Number(a % b)),
-        (Op::Pow, Literal(Number(a)), Literal(Number(b))) =>
-            Literal(Number(f64::powf(*a, *b))),
+        (Op::Add, Literal(_, Number(a)), Literal(_, Number(b))) =>
+            Literal(loc, Number(a + b)),
+        (Op::Sub, Literal(_, Number(a)), Literal(_, Number(b))) =>
+            Literal(loc, Number(a - b)),
+        (Op::Mul, Literal(_, Number(a)), Literal(_, Number(b))) =>
+            Literal(loc, Number(a * b)),
+        (Op::Div, Literal(_, Number(a)), Literal(_, Number(b))) =>
+            Literal(loc, Number(a / b)),
+        (Op::Mod, Literal(_, Number(a)), Literal(_, Number(b))) =>
+            Literal(loc, Number(a % b)),
+        (Op::Pow, Literal(_, Number(a)), Literal(_, Number(b))) =>
+            Literal(loc, Number(f64::powf(a, b))),
 
-        (Op::Eq, Literal(a), Literal(b)) =>
-            Literal(Bool(*a == *b)),
-        (Op::Ne, Literal(a), Literal(b)) =>
-            Literal(Bool(*a != *b)),
-        (Op::Ge, Literal(a), Literal(b)) =>
-            Literal(Bool(*a >= *b)),
-        (Op::Gt, Literal(a), Literal(b)) =>
-            Literal(Bool(*a > *b)),
-        (Op::Le, Literal(a), Literal(b)) =>
-            Literal(Bool(*a <= *b)),
-        (Op::Lt, Literal(a), Literal(b)) =>
-            Literal(Bool(*a < *b)),
+        (Op::Eq, Literal(_, a), Literal(_, b)) =>
+            Literal(loc, Bool(a == b)),
+        (Op::Ne, Literal(_, a), Literal(_, b)) =>
+            Literal(loc, Bool(a != b)),
+        (Op::Ge, Literal(_, a), Literal(_, b)) =>
+            Literal(loc, Bool(a >= b)),
+        (Op::Gt, Literal(_, a), Literal(_, b)) =>
+            Literal(loc, Bool(a > b)),
+        (Op::Le, Literal(_, a), Literal(_, b)) =>
+            Literal(loc, Bool(a <= b)),
+        (Op::Lt, Literal(_, a), Literal(_, b)) =>
+            Literal(loc, Bool(a < b)),
 
-        _ => Binary(op, Box::new(lhs), Box::new(rhs)),
+        (op, lhs, rhs) =>
+            Binary(loc, op, Box::new(lhs), Box::new(rhs)),
     }
 }

@@ -1,4 +1,4 @@
-use crate::syntax::tree::{Expr, Ident, Op, Stmt};
+use crate::syntax::tree::{Expr, Ident, Op, Stmt, Loc};
 use crate::syntax::tree::Expr::{Id, Binary, Apply};
 use crate::syntax::tree::Stmt::Var;
 use crate::syntax::tree::VarInit::Simple;
@@ -30,14 +30,15 @@ pub(crate) fn builtin_array_type() -> Expr {
 }
 
 pub(crate) fn access_global(name: &str) -> Expr {
-    Binary(Op::Access,
+    Binary(Loc::Injected, Op::Access,
            Box::new(Id(Ident::only("global"))),
            Box::new(Id(Ident::only(name))))
 }
 
 pub(crate) fn apply_on(expr: Expr, name: &str, args: Vec<Expr>) -> Expr {
-    Apply(Box::new(
-        Binary(Op::Access,
+    Apply(Loc::Injected, Box::new(
+        Binary(Loc::Injected,
+               Op::Access,
                Box::new(expr),
                Box::new(Id(Ident::only(name))))),
           args)

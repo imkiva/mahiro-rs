@@ -148,23 +148,23 @@ impl Desugarable for Stmt {
 impl Desugarable for Expr {
     fn desugar(self) -> Self {
         match self {
-            Literal(Array(elem)) =>
-                Alloc(Box::new(builtin_array_type()), elem.desugar()),
+            Literal(loc, Array(elem)) =>
+                Alloc(loc, Box::new(builtin_array_type()), elem.desugar()),
 
-            Literal(Pair(k, v)) =>
-                Alloc(Box::new(builtin_pair_type()), vec![(*k).desugar(), (*v).desugar()]),
+            Literal(loc, Pair(k, v)) =>
+                Alloc(loc, Box::new(builtin_pair_type()), vec![(*k).desugar(), (*v).desugar()]),
 
-            Unary(Op::Add, e) => {
+            Unary(loc, Op::Add, e) => {
                 match e.as_ref() {
-                    Literal(Number(n)) => Literal(Number(n.abs())),
-                    _ => Unary(Op::Add, e),
+                    Literal(_, Number(n)) => Literal(loc, Number(n.abs())),
+                    _ => Unary(loc, Op::Add, e),
                 }
             }
 
-            Unary(Op::Sub, e) => {
+            Unary(loc, Op::Sub, e) => {
                 match e.as_ref() {
-                    Literal(Number(n)) => Literal(Number(-n.clone())),
-                    _ => Unary(Op::Add, e),
+                    Literal(_, Number(n)) => Literal(loc, Number(-n.clone())),
+                    _ => Unary(loc, Op::Add, e),
                 }
             }
 
