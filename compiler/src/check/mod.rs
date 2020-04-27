@@ -59,7 +59,7 @@ impl Display for CheckErrorVariant {
                 }
 
             CheckErrorVariant::ArgcMismatch(_, expected, actual) =>
-                write!(f, "expected {:?} {} , but provided {:?}",
+                write!(f, "expected {:?} {}, but provided {:?}",
                        expected,
                        if *expected <= 1 { "argument" } else { "arguments" },
                        actual),
