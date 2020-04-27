@@ -114,14 +114,13 @@ fn check_stmt(ctx: &mut CheckContext, stmt: &Stmt) -> CompileResult<Type> {
             Ok(t)
         }
 
-        Stmt::Return(loc, expr) => {
+        Stmt::Return(expr) => {
             if let Some(expr) = expr {
-                let mut t = check_expr(ctx, expr)?;
-                t.loc = expr.to_loc();
+                let t = check_expr(ctx, expr)?;
                 t.not_void()?;
                 Ok(t)
             } else {
-                Ok(Types::Void.with_loc(loc.clone()))
+                Ok(Types::Void.into_type())
             }
         }
 

@@ -113,7 +113,11 @@ pub fn check_expr(ctx: &mut CheckContext, expr: &Expr) -> CompileResult<Type> {
         }
 
         Expr::Id(id) => match ctx.lookup(id) {
-            Some((_, t)) => Ok(t.clone()),
+            Some((_, t)) => {
+                let mut t = t.clone();
+                t.loc = id.to_loc();
+                Ok(t)
+            },
             _ => Ok(Types::Any.with_loc(id.to_loc())),
         },
 
