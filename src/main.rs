@@ -1,5 +1,5 @@
 use std::{env, fs};
-use covscript_compiler::Compiler;
+use covc::Compiler;
 
 fn main() {
     let args: Vec<String> = env::args().collect();
