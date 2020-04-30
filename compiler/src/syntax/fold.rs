@@ -118,7 +118,7 @@ impl Eliminable for Stmt {
         match self {
             Var(v) => Some(Var(v.fold_with(ctx))),
             VarList(vs) => Some(VarList(vs.fold_with(ctx))),
-            Return(expr) => Some(Return(expr.fold_with(ctx))),
+            Return(loc, expr) => Some(Return(loc, expr.fold_with(ctx))),
             Throw(expr) => Some(Throw(expr.fold_with(ctx))),
             ExprStmt(expr) => Some(ExprStmt(expr.fold_with(ctx))),
 

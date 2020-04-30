@@ -103,8 +103,8 @@ impl Desugarable for Stmt {
             Func(name, param, body) =>
                 Func(name, param, body.desugar()),
 
-            Return(expr) =>
-                Return(expr.desugar()),
+            Return(loc, expr) =>
+                Return(loc, expr.desugar()),
 
             Throw(expr) =>
                 Throw(expr.desugar()),

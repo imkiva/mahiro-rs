@@ -104,7 +104,7 @@ pub enum Stmt {
     Block(Body),
 
     // common statements
-    Return(Option<Expr>),
+    Return(Loc, Option<Expr>),
     Throw(Expr),
     Try(Body, Ident, Body),
     If(Expr, Body, Option<Body>),
