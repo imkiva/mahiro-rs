@@ -39,7 +39,7 @@ impl Default for CheckContext {
         Self {
             scope: Default::default(),
             depth: 0,
-            trace_check: true,
+            trace_check: false,
             trace_base_indent: 2,
         }
     }
