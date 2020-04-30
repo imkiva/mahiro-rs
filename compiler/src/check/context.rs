@@ -137,6 +137,16 @@ impl CheckContext {
         self.current_scope().in_loop
     }
 
+    pub fn is_in_function(&self) -> bool {
+        for scope in &self.scope {
+            match scope.id {
+                ScopeId::Func(_) => return true,
+                _ => (),
+            }
+        }
+        false
+    }
+
     fn current_scope(&self) -> &Scope {
         self.scope.front().expect("Checking stack underflow")
     }

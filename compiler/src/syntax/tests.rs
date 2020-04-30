@@ -666,7 +666,7 @@ mod parse {
         ");
         assert_eq!(prog, vec![
             StmtEntry(Func(Ident::only("jiegebuyao"), vec![], vec![
-                Return(None),
+                Return(Loc::Injected, None),
             ]))
         ]);
     }

@@ -114,13 +114,16 @@ fn check_stmt(ctx: &mut CheckContext, stmt: &Stmt) -> CompileResult<Type> {
             Ok(t)
         }
 
-        Stmt::Return(expr) => {
+        Stmt::Return(loc, expr) => {
+            if !ctx.is_in_function() {
+                raise_dangling_return_error(loc)?;
+            }
             if let Some(expr) = expr {
                 let t = check_expr(ctx, expr)?;
                 t.not_void()?;
                 Ok(t)
             } else {
-                Ok(Types::Void.into_type())
+                Ok(Types::Void.with_loc(loc.clone()))
             }
         }
 
@@ -321,6 +324,15 @@ pub(crate) fn raise_dangling_loop_control_error(ident: &Ident) -> CompileResult<
     Err(CompileError::CheckError(CheckError::new(
         CheckErrorVariant::DanglingLoopControl(
             ident.abs_loc, ident.text.clone(),
+        )
+    )))
+}
+
+#[inline]
+pub(crate) fn raise_dangling_return_error(loc: &Loc) -> CompileResult<()> {
+    Err(CompileError::CheckError(CheckError::new(
+        CheckErrorVariant::DanglingReturn(
+            loc.clone(),
         )
     )))
 }

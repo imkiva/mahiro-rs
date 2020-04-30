@@ -25,6 +25,7 @@ pub struct CheckError {
 pub enum CheckErrorVariant {
     Redefinition(Loc, Loc, String),
     DanglingLoopControl(Loc, String),
+    DanglingReturn(Loc),
     BottomTypedExpr(Loc),
     TypeMismatch(Loc, Option<Type>, Type),
     ArgcMismatch(Loc, usize, usize),
@@ -49,6 +50,8 @@ impl Display for CheckErrorVariant {
                 write!(f, "redefinition of '{}'", name.as_str()),
             CheckErrorVariant::DanglingLoopControl(_, code) =>
                 write!(f, "'{}' should be inside loop statement", code.as_str()),
+            CheckErrorVariant::DanglingReturn(_) =>
+                write!(f, "'return' should be inside function body"),
             CheckErrorVariant::BottomTypedExpr(_) =>
                 write!(f, "the type of expression cannot be void"),
             CheckErrorVariant::TypeMismatch(_, expected, actual) =>
