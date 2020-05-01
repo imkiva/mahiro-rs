@@ -21,7 +21,7 @@ struct Scope {
     in_loop: bool,
 }
 
-#[derive(Clone, Debug, Default)]
+#[derive(Clone, Debug)]
 pub struct CheckContext {
     /// Scope stack
     scope: VecDeque<Scope>,
@@ -30,6 +30,19 @@ pub struct CheckContext {
     depth: usize,
     /// Are we tracing the check process?
     trace_check: bool,
+    /// Indent for each depth
+    trace_base_indent: usize,
+}
+
+impl Default for CheckContext {
+    fn default() -> Self {
+        Self {
+            scope: Default::default(),
+            depth: 0,
+            trace_check: false,
+            trace_base_indent: 2,
+        }
+    }
 }
 
 impl Scope {
@@ -111,30 +124,81 @@ impl CheckContext {
         self.trace_check = tracing;
     }
 
+    pub fn set_tracing_indent(&mut self, indent: usize) {
+        self.trace_base_indent = indent;
+    }
+
+    pub fn trace<F>(&self, f: F)
+        where F: FnOnce() -> () {
+        if self.is_tracing() {
+            let spaces = (self.depth - 1) * self.trace_base_indent;
+            for _ in 0..spaces {
+                print!(" ");
+            }
+            f();
+        }
+    }
+
+    fn trace_scope(&self, scope_id: &ScopeId) {
+        match scope_id {
+            ScopeId::Global => println!("Global"),
+            ScopeId::Func(name) => println!("Function '{}'", name.as_str()),
+            ScopeId::Namespace(name) => println!("Namespace '{}'", name.as_str()),
+            ScopeId::Struct(name) => println!("Struct '{}'", name.as_str()),
+            ScopeId::UnnamedBlock => println!("Block"),
+        }
+    }
+
     pub fn enter_scope(&mut self, scope_id: ScopeId) {
         self.depth += 1;
+        self.trace(|| {
+            print!("> ");
+            self.trace_scope(&scope_id);
+        });
+
         self.scope.push_front(Scope::new(scope_id));
     }
 
     pub fn leave_scope(&mut self) {
-        self.depth -= 1;
-        if let None = self.scope.pop_front() {
+        if let Some(scope) = self.scope.pop_front() {
+            self.trace(|| {
+                print!("< ");
+                self.trace_scope(&scope.id);
+            });
+        } else {
             unreachable!("Checking stack underflow");
         }
+        self.depth -= 1;
     }
 
     pub fn enter_loop(&mut self) {
+        self.trace(|| {
+            print!("> Loop body");
+        });
         self.depth += 1;
         self.current_scope_mut().enter_loop();
     }
 
     pub fn leave_loop(&mut self) {
+        self.trace(|| {
+            print!("< Loop body");
+        });
         self.depth -= 1;
         self.current_scope_mut().leave_loop();
     }
 
     pub fn is_in_loop(&self) -> bool {
         self.current_scope().in_loop
+    }
+
+    pub fn is_in_function(&self) -> bool {
+        for scope in &self.scope {
+            match scope.id {
+                ScopeId::Func(_) => return true,
+                _ => (),
+            }
+        }
+        false
     }
 
     fn current_scope(&self) -> &Scope {

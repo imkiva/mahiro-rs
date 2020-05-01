@@ -1,7 +1,7 @@
 use crate::syntax::parse::{ParseError, ParseErrorVariant};
 use crate::check::CheckError;
 use crate::syntax::tree::Loc;
-use crate::check::CheckErrorVariant::{Redefinition, DanglingLoopControl, BottomTypedExpr, TypeMismatch, ArgcMismatch};
+use crate::check::CheckErrorVariant::{Redefinition, DanglingLoopControl, BottomTypedExpr, TypeMismatch, ArgcMismatch, DanglingReturn};
 use std::cmp::{min, max};
 use crate::check::infer_check::Type;
 
@@ -35,6 +35,7 @@ fn format_check_error(err: CheckError, path: &str, input: &str) -> String {
             format_check_error_visual(err, path, input, (es, ee), (s, e)),
 
         DanglingLoopControl(Loc::InSource(s, e), _) |
+        DanglingReturn(Loc::InSource(s, e)) |
         BottomTypedExpr(Loc::InSource(s, e)) |
         TypeMismatch(Loc::InSource(s, e), _, _) |
         ArgcMismatch(Loc::InSource(s, e), _, _) =>
