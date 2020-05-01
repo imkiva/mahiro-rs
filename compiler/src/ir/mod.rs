@@ -56,9 +56,9 @@ pub enum IR {
     // store stack top to array
     ArrayLoad,
     // load object field to stack top
-    FieldLoad,
+    FieldLoad(PoolIndex),
     // store stack top to object field
-    FieldStore,
+    FieldStore(PoolIndex),
 
     // push null to stack
     ConstNull,
