@@ -1,4 +1,7 @@
 pub mod cfg;
+pub mod data;
+pub mod translate;
+pub mod asm;
 
 pub type LocalIndex = u16;
 pub type PoolIndex = u16;
@@ -47,23 +50,27 @@ pub enum IR {
     Swap,
     // Drop the stack top
     Pop,
-    // load local variable to stack
-    LocalStore(LocalIndex),
     // store stack top to local variable
+    LocalStore(LocalIndex),
+    // load local variable to stack
     LocalLoad(LocalIndex),
-    // load from array to stack top
-    ArrayStore,
     // store stack top to array
+    ArrayStore,
+    // load from array to stack top
     ArrayLoad,
-    // load object field to stack top
-    FieldLoad(PoolIndex),
     // store stack top to object field
     FieldStore(PoolIndex),
+    // load object field to stack top
+    FieldLoad(PoolIndex),
 
     // push null to stack
     ConstNull,
-    // push const i16 to stack
-    ConstU16(i16),
+    // push const number (converted from i16) to stack
+    Const16(i16),
+    // push const number (converted from i32) to stack
+    Const32(i32),
+    // push const number to stack
+    ConstNum(f64),
     // load string constant to stack
     ConstStringLoad(PoolIndex),
 
@@ -94,4 +101,7 @@ pub enum IR {
     ReturnVoid,
     // return from function with stack top
     Return,
+
+    // Allocate new object
+    New,
 }
