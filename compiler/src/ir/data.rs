@@ -7,7 +7,7 @@ pub struct Function {
     pub code: CodeUnit,
 }
 
-#[derive(Debug, Clone, Default)]
+#[derive(Debug, Clone)]
 pub enum Field {
     MemberVar(String),
     MemberFunc(Function),
