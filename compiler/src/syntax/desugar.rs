@@ -3,7 +3,7 @@ use crate::CompileResult;
 use crate::syntax::tree::Entry::*;
 use crate::syntax::tree::Header::*;
 use crate::syntax::tree::Stmt::*;
-use crate::syntax::tree::Expr::{Literal, Unary, Alloc};
+use crate::syntax::tree::Expr::{Literal, Unary, Alloc, Lambda, Id, Group, Assign, Apply, Binary, Ternary, Question};
 use crate::syntax::tree::Case::{Sth, Dft};
 use crate::syntax::tree::Lit::{Array, Pair, Number};
 use crate::syntax::utils::*;
@@ -167,6 +167,30 @@ impl Desugarable for Expr {
                     _ => Unary(loc, Op::Add, e),
                 }
             }
+
+            Lambda(loc, cap, params, body) =>
+                Lambda(loc, cap, params, body.desugar()),
+
+            Alloc(loc, ty, args) =>
+                Alloc(loc, ty.desugar(), args.desugar()),
+
+            Group(loc, exprs) =>
+                Group(loc, exprs.desugar()),
+
+            Assign(loc, op, lhs, rhs) =>
+                Assign(loc, op, lhs.desugar(), rhs.desugar()),
+
+            Apply(loc, f, a) =>
+                Apply(loc, f.desugar(), a.desugar()),
+
+            Binary(loc, op, lhs, rhs) =>
+                Binary(loc, op, lhs.desugar(), rhs.desugar()),
+
+            Ternary(loc, cond, t, f) =>
+                Ternary(loc, cond.desugar(), t.desugar(), f.desugar()),
+
+            Question(loc, cond, f) =>
+                Question(loc, cond.desugar(), f.desugar()),
 
             expr => expr,
         }
