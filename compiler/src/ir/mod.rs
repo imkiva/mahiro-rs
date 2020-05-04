@@ -104,4 +104,7 @@ pub enum IR {
 
     // Allocate new object
     New,
+
+    // Resolve symbol by name
+    Resolve(PoolIndex),
 }

@@ -1,9 +1,11 @@
 use crate::ir::cfg::{BasicBlock, BBID, BBUnderlyingID};
 use crate::ir::{IR, LocalIndex};
+use std::ops::Index;
 
+#[derive(Clone, Debug)]
 pub struct MacroAssembler {
     editing: BasicBlock,
-    locals_map: Vec<String>
+    locals_map: Vec<String>,
 }
 
 impl MacroAssembler {
@@ -42,5 +44,11 @@ impl MacroAssembler {
         let idx = self.locals_map.len() as LocalIndex;
         self.locals_map.push(name.to_owned());
         idx
+    }
+
+    pub fn find_local(&mut self, name: &str) -> Option<LocalIndex> {
+        self.locals_map.iter()
+            .position(|n| n.as_str() == name)
+            .map(|i| i as LocalIndex)
     }
 }

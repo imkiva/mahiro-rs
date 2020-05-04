@@ -18,7 +18,7 @@ impl Translator {
         }
     }
 
-    pub fn emit_string(&mut self, str: &str) {
+    pub fn const_string_load(&mut self, str: &str) {
         let idx = self.new_string_constant(str);
         self.emit(IR::ConstStringLoad(idx));
     }
@@ -31,6 +31,10 @@ impl Translator {
         let idx = self.string_pool.len() as PoolIndex;
         self.string_pool.push(str.to_owned());
         idx
+    }
+
+    pub fn asm(&mut self) -> &mut MacroAssembler {
+        &mut self.masm
     }
 }
 
@@ -81,13 +85,13 @@ fn translate_var_init(tr: &mut Translator, var: &VarInit) {
     match var {
         VarInit::Simple(name, expr) => {
             translate_expr(tr, expr);
-            let idx = tr.new_local(name.text.as_str());
+            let idx = tr.asm().new_local(name.text.as_str());
             tr.emit(IR::LocalStore(idx));
         }
         VarInit::Structured(names, expr) => {
             translate_expr(tr, expr);
             for (name, index) in names.iter().zip(0..names.len()) {
-                let idx = tr.new_local(name.text.as_str());
+                let idx = tr.asm().new_local(name.text.as_str());
                 tr.emit(IR::Dup);
                 tr.emit(IR::Const16(index as i16));
                 tr.emit(IR::ArrayLoad);
@@ -108,7 +112,15 @@ fn translate_expr(tr: &mut Translator, expr: &Expr) {
             tr.emit(IR::Const16(args.len() as i16));
             tr.emit(IR::New);
         }
-        Expr::Id(_) => {}
+        Expr::Id(name) => {
+            match tr.asm().find_local(name.text.as_str()) {
+                Some(idx) => tr.emit(IR::LocalLoad(idx)),
+                _ => {
+                    let idx = tr.new_string_constant(name.text.as_str());
+                    tr.emit(IR::Resolve(idx));
+                },
+            }
+        }
         Expr::Group(_, exprs) => {
             exprs.iter()
                 .take(exprs.len())
@@ -130,9 +142,9 @@ fn translate_expr(tr: &mut Translator, expr: &Expr) {
 fn translate_lit(tr: &mut Translator, lit: &Lit) {
     match lit {
         Lit::Number(n) => tr.emit(IR::ConstNum(*n)),
-        Lit::Bool(b) => tr.emit(IR::Const16(if b { 1 } else { 0 })),
-        Lit::Char(c) => tr.emit(IR::Const16(c as i16)),
-        Lit::Str(s) => tr.emit_string(s.as_str()),
+        Lit::Bool(b) => tr.emit(IR::Const16(if *b { 1 } else { 0 })),
+        Lit::Char(c) => tr.emit(IR::Const16(*c as u32 as i16)),
+        Lit::Str(s) => tr.const_string_load(s.as_str()),
         Lit::Null => tr.emit(IR::ConstNull),
         _ => unreachable!("Desugar bug")
     }
