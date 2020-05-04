@@ -1,5 +1,5 @@
 use crate::syntax::tree::{Stmt, Param, Body, VarInit, Expr, Lit};
-use crate::ir::data::Function;
+use crate::ir::data::{Function, Struct};
 use crate::ir::cfg::CodeUnit;
 use crate::ir::asm::MacroAssembler;
 use crate::ir::{IR, PoolIndex};
@@ -8,6 +8,8 @@ use crate::ir::{IR, PoolIndex};
 struct Translator {
     masm: MacroAssembler,
     string_pool: Vec<String>,
+    funcs: Vec<Function>,
+    structs: Vec<Struct>,
 }
 
 impl Translator {
@@ -15,6 +17,8 @@ impl Translator {
         Self {
             masm: MacroAssembler::new(),
             string_pool: Vec::new(),
+            funcs: Vec::new(),
+            structs: Vec::new(),
         }
     }
 

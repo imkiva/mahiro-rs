@@ -7,10 +7,20 @@ pub struct Function {
     pub code: CodeUnit,
 }
 
+#[derive(Debug, Clone, Default)]
+pub enum Field {
+    MemberVar(String),
+    MemberFunc(Function),
+}
+
+#[derive(Debug, Clone, Default)]
+pub struct Struct {
+    pub name: String,
+    pub fields: Vec<Field>,
+}
+
 impl Function {
     pub fn new() -> Self {
         Self::default()
     }
 }
-
-
