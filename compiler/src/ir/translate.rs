@@ -61,6 +61,7 @@ fn translate_func_body(params: Vec<Param>, body: Body) -> CodeUnit {
             Stmt::VarList(vars) =>
                 vars.iter().for_each(|v|
                     translate_var_init(&mut tr, v)),
+
             Stmt::Block(_) => {}
             Stmt::Return(_, _) => {}
             Stmt::Throw(_) => {}
@@ -88,6 +89,7 @@ fn translate_var_init(tr: &mut Translator, var: &VarInit) {
             let idx = tr.asm().new_local(name.text.as_str());
             tr.emit(IR::LocalStore(idx));
         }
+
         VarInit::Structured(names, expr) => {
             translate_expr(tr, expr);
             for (name, index) in names.iter().zip(0..names.len()) {
@@ -105,13 +107,16 @@ fn translate_var_init(tr: &mut Translator, var: &VarInit) {
 fn translate_expr(tr: &mut Translator, expr: &Expr) {
     match expr {
         Expr::Literal(_, lit) => translate_lit(tr, lit),
+
         Expr::Lambda(_, _, _, _) => {}
+
         Expr::Alloc(_, ty, args) => {
             args.iter().rev().for_each(|arg| translate_expr(tr, arg));
             translate_expr(tr, ty.as_ref());
             tr.emit(IR::Const16(args.len() as i16));
             tr.emit(IR::New);
         }
+
         Expr::Id(name) => {
             match tr.asm().find_local(name.text.as_str()) {
                 Some(idx) => tr.emit(IR::LocalLoad(idx)),
@@ -121,6 +126,7 @@ fn translate_expr(tr: &mut Translator, expr: &Expr) {
                 },
             }
         }
+
         Expr::Group(_, exprs) => {
             exprs.iter()
                 .take(exprs.len())
@@ -130,6 +136,7 @@ fn translate_expr(tr: &mut Translator, expr: &Expr) {
                 });
             translate_expr(tr, exprs.last().unwrap());
         }
+
         Expr::Assign(_, _, _, _) => {}
         Expr::Apply(_, _, _) => {}
         Expr::Unary(_, _, _) => {}
