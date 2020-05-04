@@ -129,7 +129,7 @@ fn translate_expr(tr: &mut Translator, expr: &Expr) {
 
         Expr::Group(_, exprs) => {
             exprs.iter()
-                .take(exprs.len())
+                .take(exprs.len() - 1)
                 .for_each(|expr| {
                     translate_expr(tr, expr);
                     tr.emit(IR::Pop);
