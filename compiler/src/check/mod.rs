@@ -1,10 +1,10 @@
-use std::fmt::{Display, Formatter};
+use crate::check::infer_check::Type;
 use crate::syntax::tree::{Loc, Program};
 use crate::CompileResult;
-use crate::check::infer_check::Type;
+use std::fmt::{Display, Formatter};
 
-mod context;
 mod check;
+mod context;
 pub(crate) mod infer_check;
 
 #[cfg(test)]
@@ -33,12 +33,15 @@ pub enum CheckErrorVariant {
 
 impl Display for CheckError {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        write!(f, "In file {}: {}\n",
-               match &self.file {
-                   Some(f) => f.as_str(),
-                   _ => "<unknown-source>"
-               },
-               self.variant)
+        write!(
+            f,
+            "In file {}: {}\n",
+            match &self.file {
+                Some(f) => f.as_str(),
+                _ => "<unknown-source>",
+            },
+            self.variant
+        )
     }
 }
 
@@ -46,26 +49,38 @@ impl Display for CheckErrorVariant {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         write!(f, "Check Error: ")?;
         match self {
-            CheckErrorVariant::Redefinition(_, _, name) =>
-                write!(f, "redefinition of '{}'", name.as_str()),
-            CheckErrorVariant::DanglingLoopControl(_, code) =>
-                write!(f, "'{}' should be inside loop statement", code.as_str()),
-            CheckErrorVariant::DanglingReturn(_) =>
-                write!(f, "'return' should be inside function body"),
-            CheckErrorVariant::BottomTypedExpr(_) =>
-                write!(f, "the type of expression cannot be void"),
-            CheckErrorVariant::TypeMismatch(_, expected, actual) =>
-                match expected {
-                    Some(expected) =>
-                        write!(f, "expected type '{}', but got '{}'", expected.ty, actual.ty),
-                    _ => write!(f, "unexpected type '{}'", actual.ty)
-                }
+            CheckErrorVariant::Redefinition(_, _, name) => {
+                write!(f, "redefinition of '{}'", name.as_str())
+            }
+            CheckErrorVariant::DanglingLoopControl(_, code) => {
+                write!(f, "'{}' should be inside loop statement", code.as_str())
+            }
+            CheckErrorVariant::DanglingReturn(_) => {
+                write!(f, "'return' should be inside function body")
+            }
+            CheckErrorVariant::BottomTypedExpr(_) => {
+                write!(f, "the type of expression cannot be void")
+            }
+            CheckErrorVariant::TypeMismatch(_, expected, actual) => match expected {
+                Some(expected) => write!(
+                    f,
+                    "expected type '{}', but got '{}'",
+                    expected.ty, actual.ty
+                ),
+                _ => write!(f, "unexpected type '{}'", actual.ty),
+            },
 
-            CheckErrorVariant::ArgcMismatch(_, expected, actual) =>
-                write!(f, "expected {:?} {}, but provided {:?}",
-                       expected,
-                       if *expected <= 1 { "argument" } else { "arguments" },
-                       actual),
+            CheckErrorVariant::ArgcMismatch(_, expected, actual) => write!(
+                f,
+                "expected {:?} {}, but provided {:?}",
+                expected,
+                if *expected <= 1 {
+                    "argument"
+                } else {
+                    "arguments"
+                },
+                actual
+            ),
         }
     }
 }

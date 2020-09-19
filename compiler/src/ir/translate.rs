@@ -1,8 +1,8 @@
-use crate::syntax::tree::{Stmt, Param, Body, VarInit, Expr, Lit};
-use crate::ir::data::{Function, Struct};
-use crate::ir::cfg::CodeUnit;
 use crate::ir::asm::MacroAssembler;
-use crate::ir::{IR, PoolIndex};
+use crate::ir::CodeUnit;
+use crate::ir::{Function, Struct};
+use crate::ir::{PoolIndex, IR};
+use crate::syntax::tree::{Body, Expr, Lit, Param, Stmt, VarInit};
 
 #[derive(Debug, Clone)]
 struct Translator {
@@ -43,12 +43,10 @@ impl Translator {
 }
 
 fn translate_func(func: Stmt) -> Function {
-    let (name, params, body) =
-        match func {
-            Stmt::Func(name, params, body)
-            => (name, params, body),
-            _ => unreachable!("not a func"),
-        };
+    let (name, params, body) = match func {
+        Stmt::Func(name, params, body) => (name, params, body),
+        _ => unreachable!("not a func"),
+    };
 
     let mut compiled = Function::new();
     compiled.name = name.text;
@@ -62,9 +60,7 @@ fn translate_func_body(params: Vec<Param>, body: Body) -> CodeUnit {
     for stmt in body {
         match stmt {
             Stmt::Var(var) => translate_var_init(&mut tr, &var),
-            Stmt::VarList(vars) =>
-                vars.iter().for_each(|v|
-                    translate_var_init(&mut tr, v)),
+            Stmt::VarList(vars) => vars.iter().for_each(|v| translate_var_init(&mut tr, v)),
 
             Stmt::Block(_) => {}
             Stmt::Return(_, _) => {}
@@ -121,23 +117,19 @@ fn translate_expr(tr: &mut Translator, expr: &Expr) {
             tr.emit(IR::New);
         }
 
-        Expr::Id(name) => {
-            match tr.asm().find_local(name.text.as_str()) {
-                Some(idx) => tr.emit(IR::LocalLoad(idx)),
-                _ => {
-                    let idx = tr.new_string_constant(name.text.as_str());
-                    tr.emit(IR::Resolve(idx));
-                },
+        Expr::Id(name) => match tr.asm().find_local(name.text.as_str()) {
+            Some(idx) => tr.emit(IR::LocalLoad(idx)),
+            _ => {
+                let idx = tr.new_string_constant(name.text.as_str());
+                tr.emit(IR::Resolve(idx));
             }
-        }
+        },
 
         Expr::Group(_, exprs) => {
-            exprs.iter()
-                .take(exprs.len() - 1)
-                .for_each(|expr| {
-                    translate_expr(tr, expr);
-                    tr.emit(IR::Pop);
-                });
+            exprs.iter().take(exprs.len() - 1).for_each(|expr| {
+                translate_expr(tr, expr);
+                tr.emit(IR::Pop);
+            });
             translate_expr(tr, exprs.last().unwrap());
         }
 
@@ -157,8 +149,6 @@ fn translate_lit(tr: &mut Translator, lit: &Lit) {
         Lit::Char(c) => tr.emit(IR::Const16(*c as u32 as i16)),
         Lit::Str(s) => tr.const_string_load(s.as_str()),
         Lit::Null => tr.emit(IR::ConstNull),
-        _ => unreachable!("Desugar bug")
+        _ => unreachable!("Desugar bug"),
     }
 }
-
-

@@ -1,25 +1,25 @@
 use crate::syntax::tree::*;
 
-use std::collections::VecDeque;
-use pest::Parser;
-use pest::iterators::{Pair, Pairs};
+use crate::error::CompileError;
+use crate::syntax::tree::Case::{Dft, Sth};
+use crate::syntax::tree::Entry::{HeaderEntry, StmtEntry};
+use crate::syntax::tree::Expr::{
+    Alloc, Apply, Assign, Binary, Group, Id, Lambda, Literal, Question, Ternary, Unary,
+};
+use crate::syntax::tree::Header::{Import, Package, Using};
+use crate::syntax::tree::Lit::{Array, Bool, Char, Null, Number, Str};
+use crate::syntax::tree::Param::{Normal, Varargs};
+use crate::syntax::tree::Stmt::{
+    Block, Break, Continue, ExprStmt, For, ForEach, Func, If, Loop, Namespace, Return, Struct,
+    Switch, Throw, Try, Var, VarList, While,
+};
+use crate::syntax::tree::VarInit::{Simple, Structured};
+use crate::CompileResult;
 use pest::error::Error;
 use pest::error::ErrorVariant;
-use crate::error::CompileError;
-use crate::CompileResult;
-use crate::syntax::tree::Entry::{HeaderEntry, StmtEntry};
-use crate::syntax::tree::Header::{Using, Import, Package};
-use crate::syntax::tree::Param::{Normal, Varargs};
-use crate::syntax::tree::VarInit::{Simple, Structured};
-use crate::syntax::tree::Case::{Sth, Dft};
-use crate::syntax::tree::Lit::{Null, Number, Bool, Str,
-                               Char, Array};
-use crate::syntax::tree::Expr::{Literal, Ternary, Question, Binary, Unary, Id, Lambda, Group, Apply, Assign, Alloc};
-use crate::syntax::tree::Stmt::{Break, Continue, Throw, Return,
-                                VarList, Var, Func, Struct,
-                                Namespace, Block, If, While,
-                                For, ForEach, Loop,
-                                Try, ExprStmt, Switch};
+use pest::iterators::{Pair, Pairs};
+use pest::Parser;
+use std::collections::VecDeque;
 
 #[allow(dead_code)]
 pub type ParseErrorVariant = ErrorVariant<Rule>;
@@ -31,7 +31,9 @@ pub struct CsParser;
 
 /// macro that extract the first child of a node
 macro_rules! fst {
-    ($e:expr) => (($e).into_inner().into_iter().next());
+    ($e:expr) => {
+        ($e).into_inner().into_iter().next()
+    };
 }
 
 trait ParseTo<T> {
@@ -66,21 +68,19 @@ impl ParseTo<Expr> for Pair<'_, Rule> {
                 let mut iter = self.into_inner().into_iter();
                 let expr: Expr = iter.next().unwrap().parse_to();
                 match iter.next().map(|ternary| ternary.parse_to()) {
-                    Some(Literal(_, Lit::Pair(t, f))) =>
-                        Ternary(self_loc, expr.into(), t, f),
-                    Some(f) =>
-                        Question(self_loc, expr.into(), f.into()),
-                    _ => expr
+                    Some(Literal(_, Lit::Pair(t, f))) => Ternary(self_loc, expr.into(), t, f),
+                    Some(f) => Question(self_loc, expr.into(), f.into()),
+                    _ => expr,
                 }
             }
 
             // binary operators
-            Rule::logic_or_expr |
-            Rule::logic_and_expr |
-            Rule::relation_expr |
-            Rule::add_expr |
-            Rule::mul_expr |
-            Rule::pow_expr => {
+            Rule::logic_or_expr
+            | Rule::logic_and_expr
+            | Rule::relation_expr
+            | Rule::add_expr
+            | Rule::mul_expr
+            | Rule::pow_expr => {
                 let mut exprs = VecDeque::new();
                 let mut ops = Vec::new();
 
@@ -110,10 +110,7 @@ impl ParseTo<Expr> for Pair<'_, Rule> {
                 ops.into_iter().fold(lhs, |lhs, op| {
                     let rhs_pair = exprs.pop_front().unwrap();
                     let rhs = rhs_pair.parse_to();
-                    Binary(lhs.to_loc(),
-                           op.parse_to(),
-                           Box::new(lhs),
-                           Box::new(rhs))
+                    Binary(lhs.to_loc(), op.parse_to(), Box::new(lhs), Box::new(rhs))
                 })
             }
 
@@ -142,12 +139,10 @@ impl ParseTo<Expr> for Pair<'_, Rule> {
                 let iter = self.into_inner().into_iter();
                 let first = iter.peek().unwrap();
                 match first.as_rule() {
-                    Rule::literal |
-                    Rule::lambda => first.parse_to(),
+                    Rule::literal | Rule::lambda => first.parse_to(),
                     Rule::allocation => first.parse_to(),
                     Rule::id => Id(Ident::new(first.as_span(), first.as_str())),
-                    Rule::expr => Group(self_loc,
-                                        iter.map(|expr| expr.parse_to()).collect()),
+                    Rule::expr => Group(self_loc, iter.map(|expr| expr.parse_to()).collect()),
                     _ => unreachable!(),
                 }
             }
@@ -159,12 +154,13 @@ impl ParseTo<Expr> for Pair<'_, Rule> {
             Rule::literal => {
                 let child = fst!(self).unwrap();
                 match child.as_rule() {
-                    Rule::number_lit => Literal(self_loc,
-                                                Number(child.as_str().parse::<f64>().unwrap())),
-                    Rule::bool_lit => Literal(self_loc,
-                                              Bool(child.as_str().parse::<bool>().unwrap())),
-                    Rule::null_lit => Literal(self_loc,
-                                              Null),
+                    Rule::number_lit => {
+                        Literal(self_loc, Number(child.as_str().parse::<f64>().unwrap()))
+                    }
+                    Rule::bool_lit => {
+                        Literal(self_loc, Bool(child.as_str().parse::<bool>().unwrap()))
+                    }
+                    Rule::null_lit => Literal(self_loc, Null),
                     Rule::string_lit => {
                         // remove quote marks
                         let s = child.as_str().to_owned();
@@ -176,8 +172,10 @@ impl ParseTo<Expr> for Pair<'_, Rule> {
                         let s = child.as_str().to_owned();
                         let peek = s[1..2].parse::<char>().unwrap();
                         match peek {
-                            '\\' => Literal(self_loc,
-                                            Char(unescape_char(s[2..3].parse::<char>().unwrap()))),
+                            '\\' => Literal(
+                                self_loc,
+                                Char(unescape_char(s[2..3].parse::<char>().unwrap())),
+                            ),
                             _ => Literal(self_loc, Char(peek)),
                         }
                     }
@@ -188,13 +186,10 @@ impl ParseTo<Expr> for Pair<'_, Rule> {
             }
 
             // sub-rule of Rule::literal
-            Rule::array_lit => {
-                match fst!(self) {
-                    Some(args) => Literal(self_loc,
-                                          Array(args.parse_to())),
-                    _ => Literal(self_loc, Array(vec![])),
-                }
-            }
+            Rule::array_lit => match fst!(self) {
+                Some(args) => Literal(self_loc, Array(args.parse_to())),
+                _ => Literal(self_loc, Array(vec![])),
+            },
 
             // sub-rule of Rule::primary_prefix
             Rule::lambda => {
@@ -205,21 +200,21 @@ impl ParseTo<Expr> for Pair<'_, Rule> {
                 };
                 let callable_params = iter.next().unwrap();
                 let expr = iter.next().unwrap();
-                Lambda(self_loc,
-                       capture,
-                       callable_params.parse_to(),
-                       Box::new(expr.parse_to()))
+                Lambda(
+                    self_loc,
+                    capture,
+                    callable_params.parse_to(),
+                    Box::new(expr.parse_to()),
+                )
             }
 
             // sub-rule of Rule::primary_prefix
             Rule::allocation => {
                 let expr = fst!(self).unwrap().parse_to();
                 match expr {
-                    Apply(_, var_type, ctor_args) =>
-                        Alloc(self_loc, var_type, ctor_args),
+                    Apply(_, var_type, ctor_args) => Alloc(self_loc, var_type, ctor_args),
 
-                    expr =>
-                        Alloc(self_loc, Box::new(expr), vec![]),
+                    expr => Alloc(self_loc, Box::new(expr), vec![]),
                 }
             }
 
@@ -235,8 +230,10 @@ impl ParseTo<Header> for Pair<'_, Rule> {
             Rule::using_decl => Using(fst!(child).unwrap().parse_to()),
             Rule::import_decl => {
                 let mut iter = child.into_inner().into_iter();
-                Import(iter.next().unwrap().parse_to(),
-                       iter.next().map(|id| id.parse_to()))
+                Import(
+                    iter.next().unwrap().parse_to(),
+                    iter.next().map(|id| id.parse_to()),
+                )
             }
             Rule::package_decl => Package(fst!(child).unwrap().parse_to()),
             _ => unreachable!(),
@@ -247,17 +244,20 @@ impl ParseTo<Header> for Pair<'_, Rule> {
 impl ParseTo<Ident> for Pair<'_, Rule> {
     fn parse_to(self) -> Ident {
         match self.as_rule() {
-            Rule::mod_name => Ident::new(self.as_span(),
-                                         self.into_inner().into_iter()
-                                             .map(|id| id.parse_to())
-                                             .map(|ident: Ident| ident.text)
-                                             .collect::<Vec<String>>()
-                                             .join(".")
-                                             .as_str()),
+            Rule::mod_name => Ident::new(
+                self.as_span(),
+                self.into_inner()
+                    .into_iter()
+                    .map(|id| id.parse_to())
+                    .map(|ident: Ident| ident.text)
+                    .collect::<Vec<String>>()
+                    .join(".")
+                    .as_str(),
+            ),
 
             Rule::id => Ident::new(self.as_span(), self.as_str()),
 
-            _ => unreachable!()
+            _ => unreachable!(),
         }
     }
 }
@@ -265,7 +265,9 @@ impl ParseTo<Ident> for Pair<'_, Rule> {
 impl ParseTo<Vec<Ident>> for Pair<'_, Rule> {
     fn parse_to(self) -> Vec<Ident> {
         match self.as_rule() {
-            Rule::params => self.into_inner().into_iter()
+            Rule::params => self
+                .into_inner()
+                .into_iter()
                 .map(|id| id.parse_to())
                 .collect(),
 
@@ -277,19 +279,21 @@ impl ParseTo<Vec<Ident>> for Pair<'_, Rule> {
 impl ParseTo<Vec<Param>> for Pair<'_, Rule> {
     fn parse_to(self) -> Vec<Param> {
         match self.as_rule() {
-            Rule::params => self.into_inner().into_iter()
+            Rule::params => self
+                .into_inner()
+                .into_iter()
                 .map(|id| Normal(id.parse_to()))
                 .collect(),
 
-            Rule::callable_params => {
-                self.into_inner().into_iter()
-                    .flat_map(|child| match child.as_rule() {
-                        Rule::params => child.parse_to(),
-                        Rule::varargs_param => vec![Varargs(fst!(child).unwrap().parse_to())],
-                        _ => unreachable!(),
-                    })
-                    .collect()
-            }
+            Rule::callable_params => self
+                .into_inner()
+                .into_iter()
+                .flat_map(|child| match child.as_rule() {
+                    Rule::params => child.parse_to(),
+                    Rule::varargs_param => vec![Varargs(fst!(child).unwrap().parse_to())],
+                    _ => unreachable!(),
+                })
+                .collect(),
 
             _ => unreachable!(),
         }
@@ -299,7 +303,9 @@ impl ParseTo<Vec<Param>> for Pair<'_, Rule> {
 impl ParseTo<Vec<Expr>> for Pair<'_, Rule> {
     fn parse_to(self) -> Vec<Expr> {
         match self.as_rule() {
-            Rule::args => self.into_inner().into_iter()
+            Rule::args => self
+                .into_inner()
+                .into_iter()
                 .map(|expr| expr.parse_to())
                 .collect(),
 
@@ -375,27 +381,32 @@ fn unescape_char(ch: char) -> char {
 
 fn build_primary_expr(prefix: Expr, postfix: Pair<Rule>) -> Expr {
     let expr_loc = match (prefix.to_loc(), postfix.as_span().to_loc()) {
-        (Loc::InSource(start, _), Loc::InSource(_, end)) =>
-            Loc::InSource(start, end),
-        (_, postfix_loc) => postfix_loc
+        (Loc::InSource(start, _), Loc::InSource(_, end)) => Loc::InSource(start, end),
+        (_, postfix_loc) => postfix_loc,
     };
 
     match postfix.as_rule() {
-        Rule::apply => Apply(expr_loc,
-                             Box::new(prefix),
-                             fst!(postfix)
-                                 .map(|args| args.parse_to())
-                                 .unwrap_or_default()),
+        Rule::apply => Apply(
+            expr_loc,
+            Box::new(prefix),
+            fst!(postfix)
+                .map(|args| args.parse_to())
+                .unwrap_or_default(),
+        ),
 
-        Rule::index_access => Binary(expr_loc,
-                                     Op::Index,
-                                     Box::new(prefix),
-                                     Box::new(fst!(postfix).unwrap().parse_to())),
+        Rule::index_access => Binary(
+            expr_loc,
+            Op::Index,
+            Box::new(prefix),
+            Box::new(fst!(postfix).unwrap().parse_to()),
+        ),
 
-        Rule::member_access => Binary(expr_loc,
-                                      Op::Access,
-                                      Box::new(prefix),
-                                      Box::new(Id(fst!(postfix).unwrap().parse_to()))),
+        Rule::member_access => Binary(
+            expr_loc,
+            Op::Access,
+            Box::new(prefix),
+            Box::new(Id(fst!(postfix).unwrap().parse_to())),
+        ),
 
         Rule::mapping => {
             let key = Box::new(prefix);
@@ -407,15 +418,15 @@ fn build_primary_expr(prefix: Expr, postfix: Pair<Rule>) -> Expr {
             let mut iter = postfix.into_inner().into_iter();
             let op = iter.next().unwrap();
             let expr = iter.next().unwrap();
-            Assign(expr_loc,
-                   op.parse_to(),
-                   Box::new(prefix),
-                   Box::new(expr.parse_to()))
+            Assign(
+                expr_loc,
+                op.parse_to(),
+                Box::new(prefix),
+                Box::new(expr.parse_to()),
+            )
         }
 
-        Rule::flatten => Unary(expr_loc,
-                               Op::Flatten,
-                               Box::new(prefix)),
+        Rule::flatten => Unary(expr_loc, Op::Flatten, Box::new(prefix)),
 
         _ => unreachable!(),
     }
@@ -430,8 +441,10 @@ impl ParseTo<Stmt> for Pair<'_, Rule> {
             Rule::cross_line_stmt => fst!(self).unwrap().parse_to(),
             Rule::primary_stmt => fst!(self).unwrap().parse_to(),
             Rule::throw_stmt => Throw(fst!(self).unwrap().parse_to()),
-            Rule::return_stmt => Return(self.as_span().to_loc(),
-                                        fst!(self).map(|expr| expr.parse_to())),
+            Rule::return_stmt => Return(
+                self.as_span().to_loc(),
+                fst!(self).map(|expr| expr.parse_to()),
+            ),
 
             // variable declaration
             Rule::var_decl => {
@@ -439,12 +452,14 @@ impl ParseTo<Stmt> for Pair<'_, Rule> {
                 if vars.len() == 1 {
                     vars.pop().unwrap().parse_to()
                 } else {
-                    VarList(vars.into_iter().map(|init|
-                        match init.parse_to() {
-                            Stmt::Var(init) => init,
-                            _ => unreachable!()
-                        })
-                        .collect())
+                    VarList(
+                        vars.into_iter()
+                            .map(|init| match init.parse_to() {
+                                Stmt::Var(init) => init,
+                                _ => unreachable!(),
+                            })
+                            .collect(),
+                    )
                 }
             }
             // sub-rule of var_decl
@@ -549,11 +564,13 @@ impl ParseTo<Stmt> for Pair<'_, Rule> {
             Rule::expr_stmt => {
                 let mut iter = self.into_inner().into_iter();
                 let prefix = iter.next().unwrap().parse_to();
-                ExprStmt(iter.flat_map(|postfix| postfix.into_inner())
-                    .fold(prefix, build_primary_expr))
+                ExprStmt(
+                    iter.flat_map(|postfix| postfix.into_inner())
+                        .fold(prefix, build_primary_expr),
+                )
             }
 
-            _ => unreachable!()
+            _ => unreachable!(),
         }
     }
 }
@@ -561,11 +578,15 @@ impl ParseTo<Stmt> for Pair<'_, Rule> {
 impl ParseTo<Vec<Stmt>> for Pair<'_, Rule> {
     fn parse_to(self) -> Vec<Stmt> {
         match self.as_rule() {
-            Rule::common_body => self.into_inner().into_iter()
+            Rule::common_body => self
+                .into_inner()
+                .into_iter()
                 .map(|stmt| stmt.parse_to())
                 .collect(),
 
-            Rule::struct_body => self.into_inner().into_iter()
+            Rule::struct_body => self
+                .into_inner()
+                .into_iter()
                 .map(|decl| decl.parse_to())
                 .collect(),
 
@@ -578,7 +599,7 @@ impl ParseTo<Vec<Stmt>> for Pair<'_, Rule> {
                 }
             }
 
-            _ => unreachable!()
+            _ => unreachable!(),
         }
     }
 }
@@ -590,14 +611,10 @@ impl ParseTo<Case> for Pair<'_, Rule> {
             Rule::sth_case => {
                 let mut iter = self.into_inner().into_iter();
                 let expr = iter.next().unwrap().parse_to();
-                let body = iter.next()
-                    .map(|body| body.parse_to())
-                    .unwrap_or_default();
+                let body = iter.next().map(|body| body.parse_to()).unwrap_or_default();
                 Sth(expr, body)
             }
-            Rule::default_case => {
-                Dft(fst!(self).map(|body| body.parse_to()).unwrap_or_default())
-            }
+            Rule::default_case => Dft(fst!(self).map(|body| body.parse_to()).unwrap_or_default()),
             _ => unreachable!(),
         }
     }

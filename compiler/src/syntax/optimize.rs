@@ -1,6 +1,6 @@
-use crate::syntax::tree::{Program, Expr, Body};
-use crate::syntax::fold::{FoldContext, Eliminable};
+use crate::syntax::fold::{Eliminable, FoldContext};
 use crate::syntax::tree::Stmt::ExprStmt;
+use crate::syntax::tree::{Body, Expr, Program};
 use crate::CompileResult;
 
 pub enum OptimizeLevel {
@@ -26,8 +26,7 @@ fn optimize_main(input: Program, level: OptimizeLevel) -> Program {
     match &level {
         OptimizeLevel::Disabled => input,
         OptimizeLevel::Basic => input.eliminate(),
-        OptimizeLevel::Aggressive |
-        OptimizeLevel::JustDoIt => {
+        OptimizeLevel::Aggressive | OptimizeLevel::JustDoIt => {
             let mut ctx = OptimizeContext::new(level);
             ctx.prepare(&input);
             input.eliminate_with(Some(&ctx))
@@ -36,14 +35,12 @@ fn optimize_main(input: Program, level: OptimizeLevel) -> Program {
 }
 
 struct OptimizeContext {
-    level: OptimizeLevel
+    level: OptimizeLevel,
 }
 
 impl OptimizeContext {
     fn new(level: OptimizeLevel) -> OptimizeContext {
-        OptimizeContext {
-            level
-        }
+        OptimizeContext { level }
     }
 
     fn prepare(&mut self, _program: &Program) {}
@@ -59,9 +56,8 @@ impl FoldContext for OptimizeContext {
         // if the body's scope is same with parent's
         // enabled if level >= OptimizeLevel::Aggressive
         match self.level {
-            OptimizeLevel::Aggressive |
-            OptimizeLevel::JustDoIt => needs_new_scope(body),
-            _ => false
+            OptimizeLevel::Aggressive | OptimizeLevel::JustDoIt => needs_new_scope(body),
+            _ => false,
         }
     }
 }

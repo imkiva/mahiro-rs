@@ -1,11 +1,9 @@
-pub mod cfg;
-pub mod data;
-pub mod translate;
 pub mod asm;
+pub mod translate;
 
 pub type LocalIndex = u16;
 pub type PoolIndex = u16;
-use cfg::BBID;
+pub type BBUnderlyingID = u32;
 
 #[derive(Debug, Clone)]
 pub enum IRCmp {
@@ -107,4 +105,56 @@ pub enum IR {
 
     // Resolve symbol by name
     Resolve(PoolIndex),
+}
+
+#[derive(Debug, Clone, Copy)]
+pub enum BBID {
+    This,
+    That(BBUnderlyingID),
+}
+
+#[derive(Debug, Clone)]
+pub struct BasicBlock {
+    pub ir: Vec<IR>,
+    pub id: BBUnderlyingID,
+    pub succ: BBID,
+    pub pred: BBID,
+}
+
+#[derive(Debug, Clone, Default)]
+pub struct CodeUnit {
+    pub locals: usize,
+    pub blocks: Vec<BasicBlock>,
+    pub children: Vec<CodeUnit>,
+}
+
+#[derive(Debug, Clone, Default)]
+pub struct Function {
+    pub name: String,
+    pub argc: usize,
+    pub code: CodeUnit,
+}
+
+#[derive(Debug, Clone)]
+pub enum Field {
+    MemberVar(String),
+    MemberFunc(Function),
+}
+
+#[derive(Debug, Clone, Default)]
+pub struct Struct {
+    pub name: String,
+    pub fields: Vec<Field>,
+}
+
+impl Function {
+    pub fn new() -> Self {
+        Self::default()
+    }
+}
+
+impl CodeUnit {
+    pub fn new() -> Self {
+        Self::default()
+    }
 }

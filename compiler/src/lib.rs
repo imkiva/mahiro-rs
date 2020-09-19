@@ -2,18 +2,18 @@ extern crate pest;
 #[macro_use]
 extern crate pest_derive;
 
-pub(crate) mod syntax;
-pub(crate) mod check;
-pub(crate) mod ir;
-pub mod error;
 mod capi;
+pub(crate) mod check;
+pub mod error;
+pub(crate) mod ir;
+pub(crate) mod syntax;
 
-use crate::error::CompileError;
-use crate::syntax::tree::Program;
-use crate::syntax::parse::CsParser;
-use crate::syntax::desugar::Desugar;
-use crate::syntax::optimize::{Optimizer, OptimizeLevel};
 use crate::check::Checker;
+use crate::error::CompileError;
+use crate::syntax::desugar::Desugar;
+use crate::syntax::optimize::{OptimizeLevel, Optimizer};
+use crate::syntax::parse::CsParser;
+use crate::syntax::tree::Program;
 
 pub struct Compiler;
 
