@@ -1,4 +1,5 @@
-covscript-rs
-============
+mahiro-rs
+=========
 
-The rust implementation of CovScript 3+
+The Mahiro VM written in Rust.
+

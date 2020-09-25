@@ -1,0 +1,4 @@
+enum Opcode {
+    PUSH,
+    POP,
+}
