@@ -8,4 +8,5 @@ edition = "2018"
 
 [dependencies]
 compiler = { path = 'compiler' }
-core = { path = 'core' }
+vm = { path = 'vm' }
+lang = { path = 'lang' }
