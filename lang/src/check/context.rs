@@ -1,6 +1,6 @@
-use std::collections::{VecDeque, HashMap};
-use crate::syntax::tree::Ident;
 use crate::check::infer_check::Type;
+use crate::syntax::tree::Ident;
+use std::collections::{HashMap, VecDeque};
 
 #[derive(Clone, Debug)]
 pub enum ScopeId {
@@ -129,7 +129,9 @@ impl CheckContext {
     }
 
     pub fn trace<F>(&self, f: F)
-        where F: FnOnce() -> () {
+    where
+        F: FnOnce() -> (),
+    {
         if self.is_tracing() {
             let spaces = (self.depth - 1) * self.trace_base_indent;
             for _ in 0..spaces {

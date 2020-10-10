@@ -1,9 +1,11 @@
-use crate::CompileResult;
-use crate::syntax::tree::{Program, Entry, Header, Stmt, VarInit, Ident, Expr, Param, Body, Case, Loc, ToLoc};
 use crate::check::context::{CheckContext, ScopeId};
-use crate::error::CompileError;
-use crate::check::{CheckError, CheckErrorVariant};
 use crate::check::infer_check::{Type, Types};
+use crate::check::{CheckError, CheckErrorVariant};
+use crate::error::CompileError;
+use crate::syntax::tree::{
+    Body, Case, Entry, Expr, Header, Ident, Loc, Param, Program, Stmt, ToLoc, VarInit,
+};
+use crate::CompileResult;
 
 pub fn checker_main(input: &Program) -> CompileResult<()> {
     let mut ctx = CheckContext::new();
@@ -30,9 +32,7 @@ fn check_header(ctx: &mut CheckContext, hdr: &Header) -> CompileResult<()> {
     match hdr {
         Header::Package(_) => Ok(()),
         Header::Using(_) => Ok(()),
-        Header::Import(_, Some(id)) => {
-            check_redefinition(ctx, id, &Types::Any.into_type())
-        }
+        Header::Import(_, Some(id)) => check_redefinition(ctx, id, &Types::Any.into_type()),
         Header::Import(_, _) => unreachable!("Desugar bug"),
     }
 }
@@ -51,11 +51,16 @@ fn check_stmt(ctx: &mut CheckContext, stmt: &Stmt) -> CompileResult<Type> {
 
         Stmt::Func(id, params, body) => {
             // first of all, build a fake function type
-            let args: Vec<Type> = params.iter()
+            let args: Vec<Type> = params
+                .iter()
                 .map(|p| Types::Any.with_loc(p.to_loc()))
                 .collect();
-            check_redefinition(ctx, id, &Types::Applicable(
-                Box::new(Types::Any.into_type()), args.clone()).with_loc(id.to_loc()))?;
+            check_redefinition(
+                ctx,
+                id,
+                &Types::Applicable(Box::new(Types::Any.into_type()), args.clone())
+                    .with_loc(id.to_loc()),
+            )?;
 
             // second, enter the function scope and check params
             ctx.enter_scope(ScopeId::Func(id.text.clone()));
@@ -68,8 +73,11 @@ fn check_stmt(ctx: &mut CheckContext, stmt: &Stmt) -> CompileResult<Type> {
             // replace the fake function type with our new one.
             // this is defined in the function's scope, so
             // no redefinition will be reported.
-            check_redefinition(ctx, id, &Types::Applicable(Box::new(ret), args.clone())
-                .with_loc(id.to_loc()))?;
+            check_redefinition(
+                ctx,
+                id,
+                &Types::Applicable(Box::new(ret), args.clone()).with_loc(id.to_loc()),
+            )?;
 
             // recheck the body and get the real return type
             // in theory, this is meaningful only when:
@@ -81,9 +89,10 @@ fn check_stmt(ctx: &mut CheckContext, stmt: &Stmt) -> CompileResult<Type> {
             // we shouldn't use check_redefinition because what we are doing
             // is actually redefining the function itself.
             ctx.leave_scope();
-            ctx.rewrite_in_current(id,
-                                   &Types::Applicable(Box::new(ret), args.clone())
-                                       .with_loc(id.to_loc()));
+            ctx.rewrite_in_current(
+                id,
+                &Types::Applicable(Box::new(ret), args.clone()).with_loc(id.to_loc()),
+            );
             Ok(Types::Void.into_type())
         }
 
@@ -205,8 +214,7 @@ fn check_stmt(ctx: &mut CheckContext, stmt: &Stmt) -> CompileResult<Type> {
             Ok(t)
         }
 
-        Stmt::Break(id) |
-        Stmt::Continue(id) => {
+        Stmt::Break(id) | Stmt::Continue(id) => {
             if !ctx.is_in_loop() {
                 raise_dangling_loop_control_error(id)?;
             }
@@ -251,10 +259,8 @@ fn check_var_init(ctx: &mut CheckContext, var_init: &VarInit) -> CompileResult<(
 pub(crate) fn check_params(ctx: &mut CheckContext, params: &Vec<Param>) -> CompileResult<()> {
     for param in params {
         match param {
-            Param::Normal(id) =>
-                check_redefinition(ctx, id, &Types::Any.with_loc(id.to_loc()))?,
-            Param::Varargs(id) =>
-                check_redefinition(ctx, id, &Types::Any.with_loc(id.to_loc()))?,
+            Param::Normal(id) => check_redefinition(ctx, id, &Types::Any.with_loc(id.to_loc()))?,
+            Param::Varargs(id) => check_redefinition(ctx, id, &Types::Any.with_loc(id.to_loc()))?,
         }
     }
     Ok(())
@@ -313,56 +319,49 @@ fn check_redefinition(ctx: &mut CheckContext, id: &Ident, idtype: &Type) -> Comp
 #[inline]
 pub(crate) fn raise_redefinition_error(prev: &Ident, curr: &Ident) -> CompileResult<()> {
     Err(CompileError::CheckError(CheckError::new(
-        CheckErrorVariant::Redefinition(
-            prev.abs_loc, curr.abs_loc, curr.text.clone(),
-        )
+        CheckErrorVariant::Redefinition(prev.abs_loc, curr.abs_loc, curr.text.clone()),
     )))
 }
 
 #[inline]
 pub(crate) fn raise_dangling_loop_control_error(ident: &Ident) -> CompileResult<()> {
     Err(CompileError::CheckError(CheckError::new(
-        CheckErrorVariant::DanglingLoopControl(
-            ident.abs_loc, ident.text.clone(),
-        )
+        CheckErrorVariant::DanglingLoopControl(ident.abs_loc, ident.text.clone()),
     )))
 }
 
 #[inline]
 pub(crate) fn raise_dangling_return_error(loc: &Loc) -> CompileResult<()> {
     Err(CompileError::CheckError(CheckError::new(
-        CheckErrorVariant::DanglingReturn(
-            loc.clone(),
-        )
+        CheckErrorVariant::DanglingReturn(loc.clone()),
     )))
 }
 
 #[inline]
 pub(crate) fn raise_bottom_typed_expr_error(loc: Loc) -> CompileResult<()> {
     Err(CompileError::CheckError(CheckError::new(
-        CheckErrorVariant::BottomTypedExpr(
-            loc
-        )
+        CheckErrorVariant::BottomTypedExpr(loc),
     )))
 }
 
 #[inline]
-pub(crate) fn raise_type_mismatch_error(loc: Loc, expected: Option<Type>, actual: Type)
-                                        -> CompileResult<()> {
+pub(crate) fn raise_type_mismatch_error(
+    loc: Loc,
+    expected: Option<Type>,
+    actual: Type,
+) -> CompileResult<()> {
     Err(CompileError::CheckError(CheckError::new(
-        CheckErrorVariant::TypeMismatch(
-            loc, expected, actual,
-        )
+        CheckErrorVariant::TypeMismatch(loc, expected, actual),
     )))
 }
 
 #[inline]
-pub(crate) fn raise_argc_mismatch_error(loc: Loc, expected: usize, actual: usize)
-                                        -> CompileResult<()> {
+pub(crate) fn raise_argc_mismatch_error(
+    loc: Loc,
+    expected: usize,
+    actual: usize,
+) -> CompileResult<()> {
     Err(CompileError::CheckError(CheckError::new(
-        CheckErrorVariant::ArgcMismatch(
-            loc, expected, actual,
-        )
+        CheckErrorVariant::ArgcMismatch(loc, expected, actual),
     )))
 }
-

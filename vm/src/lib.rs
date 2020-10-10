@@ -1,5 +1,5 @@
-pub mod memory;
 pub mod binfmt;
+pub mod memory;
 pub mod vm;
 
 const NUM_GENERAL_REG: usize = 32;

@@ -1,9 +1,11 @@
-use crate::syntax::parse::{ParseError, ParseErrorVariant};
-use crate::check::CheckError;
-use crate::syntax::tree::Loc;
-use crate::check::CheckErrorVariant::{Redefinition, DanglingLoopControl, BottomTypedExpr, TypeMismatch, ArgcMismatch, DanglingReturn};
-use std::cmp::{min, max};
 use crate::check::infer_check::Type;
+use crate::check::CheckError;
+use crate::check::CheckErrorVariant::{
+    ArgcMismatch, BottomTypedExpr, DanglingLoopControl, DanglingReturn, Redefinition, TypeMismatch,
+};
+use crate::syntax::parse::{ParseError, ParseErrorVariant};
+use crate::syntax::tree::Loc;
+use std::cmp::{max, min};
 
 #[derive(Debug)]
 pub enum CompileError {
@@ -14,11 +16,9 @@ pub enum CompileError {
 impl CompileError {
     pub fn error_message(self, path: &str, input: &str) -> String {
         match self {
-            CompileError::ParseError(err) =>
-                format!("{}", err),
+            CompileError::ParseError(err) => format!("{}", err),
 
-            CompileError::CheckError(err) =>
-                format_check_error(err, path, input),
+            CompileError::CheckError(err) => format_check_error(err, path, input),
         }
     }
 }
@@ -27,26 +27,38 @@ type LocRange = (usize, usize);
 
 fn format_check_error(err: CheckError, path: &str, input: &str) -> String {
     match err.variant {
-        Redefinition(Loc::InSource(ss, se), Loc::InSource(es, ee), _) =>
-            format_check_error_visual(err, path, input, (ss, se), (es, ee)),
+        Redefinition(Loc::InSource(ss, se), Loc::InSource(es, ee), _) => {
+            format_check_error_visual(err, path, input, (ss, se), (es, ee))
+        }
 
-        TypeMismatch(Loc::InSource(s, e), Some(
-            Type { ty: _, loc: Loc::InSource(es, ee) }), _) =>
-            format_check_error_visual(err, path, input, (es, ee), (s, e)),
+        TypeMismatch(
+            Loc::InSource(s, e),
+            Some(Type {
+                ty: _,
+                loc: Loc::InSource(es, ee),
+            }),
+            _,
+        ) => format_check_error_visual(err, path, input, (es, ee), (s, e)),
 
-        DanglingLoopControl(Loc::InSource(s, e), _) |
-        DanglingReturn(Loc::InSource(s, e)) |
-        BottomTypedExpr(Loc::InSource(s, e)) |
-        TypeMismatch(Loc::InSource(s, e), _, _) |
-        ArgcMismatch(Loc::InSource(s, e), _, _) =>
-            format_check_error_at_pos(err, path, input, (s, e)),
+        DanglingLoopControl(Loc::InSource(s, e), _)
+        | DanglingReturn(Loc::InSource(s, e))
+        | BottomTypedExpr(Loc::InSource(s, e))
+        | TypeMismatch(Loc::InSource(s, e), _, _)
+        | ArgcMismatch(Loc::InSource(s, e), _, _) => {
+            format_check_error_at_pos(err, path, input, (s, e))
+        }
 
         _ => format!("{}", err.with_path(path)),
     }
 }
 
-fn format_check_error_visual(err: CheckError, path: &str, input: &str,
-                             loc1: LocRange, loc2: LocRange) -> String {
+fn format_check_error_visual(
+    err: CheckError,
+    path: &str,
+    input: &str,
+    loc1: LocRange,
+    loc2: LocRange,
+) -> String {
     format_check_error_at_pos(err, path, input, (loc1.0, loc2.0))
 }
 
@@ -89,10 +101,7 @@ mod tests {
 
         assert_eq!(
             msg,
-            vec![
-                "In file <stdin>: Check Error: redefinition of 'nice'",
-                ""
-            ].join("\n")
+            vec!["In file <stdin>: Check Error: redefinition of 'nice'", ""].join("\n")
         );
     }
 
@@ -138,7 +147,8 @@ mod tests {
                 "  |     ^",
                 "  |",
                 "  = Check Error: redefinition of 'nice'",
-            ].join("\n")
+            ]
+            .join("\n")
         );
     }
 }

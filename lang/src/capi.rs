@@ -1,8 +1,8 @@
-use std::panic::catch_unwind;
-use std::ffi::CStr;
 use libc::c_char;
 use libc::c_uchar;
 use libc::size_t;
+use std::ffi::CStr;
+use std::panic::catch_unwind;
 
 use crate::error::CompileError;
 use crate::Compiler;
@@ -61,8 +61,10 @@ impl CCompileResult {
     }
 
     pub fn from_compile_error(path: &str, input: &str, err: CompileError) -> CCompileResult {
-        CCompileResult::from_string(&err.error_message(path, input),
-                                    CCompileResultKind::CompileError)
+        CCompileResult::from_string(
+            &err.error_message(path, input),
+            CCompileResultKind::CompileError,
+        )
     }
 
     pub fn from_code(code: &[u8]) -> CCompileResult {
@@ -107,15 +109,14 @@ pub extern "C" fn compile_source(file: *const c_char, src: *const c_char) -> CCo
         let _path = to_rust_str(file);
         let _input = to_rust_str(src);
         // TODO: codegen
-        CCompileResult::from_string("unimplemented",
-                                    CCompileResultKind::InternalError)
+        CCompileResult::from_string("unimplemented", CCompileResultKind::InternalError)
     });
 
     match result {
         Ok(r) => r,
-        Err(e) => CCompileResult::from_string(
-            &format!("{:?}", e),
-            CCompileResultKind::InternalError),
+        Err(e) => {
+            CCompileResult::from_string(&format!("{:?}", e), CCompileResultKind::InternalError)
+        }
     }
 }
 
@@ -125,18 +126,17 @@ pub extern "C" fn compile_to_ast(file: *const c_char, src: *const c_char) -> CCo
         let path = to_rust_str(file);
         let input = to_rust_str(src);
         match Compiler::compile_to_ast(input) {
-            Ok(tree) => CCompileResult::from_string(
-                &format!("{:#?}", tree),
-                CCompileResultKind::Success,
-            ),
+            Ok(tree) => {
+                CCompileResult::from_string(&format!("{:#?}", tree), CCompileResultKind::Success)
+            }
             Err(err) => CCompileResult::from_compile_error(path, input, err),
         }
     });
 
     match result {
         Ok(r) => r,
-        Err(e) => CCompileResult::from_string(
-            &format!("{:?}", e),
-            CCompileResultKind::InternalError),
+        Err(e) => {
+            CCompileResult::from_string(&format!("{:?}", e), CCompileResultKind::InternalError)
+        }
     }
 }

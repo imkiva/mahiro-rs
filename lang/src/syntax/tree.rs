@@ -208,8 +208,7 @@ impl ToLoc for Expr {
 impl ToLoc for Param {
     fn to_loc(&self) -> Loc {
         match self {
-            Param::Normal(id) |
-            Param::Varargs(id) => id.to_loc(),
+            Param::Normal(id) | Param::Varargs(id) => id.to_loc(),
         }
     }
 }

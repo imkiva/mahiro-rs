@@ -1,4 +1,4 @@
-use crate::{NUM_ARGUMENT_REG, NUM_FLOAT_REG, NUM_GENERAL_REG, NUM_RETURN_REG, Offset};
+use crate::{Offset, NUM_ARGUMENT_REG, NUM_FLOAT_REG, NUM_GENERAL_REG, NUM_RETURN_REG};
 
 #[repr(C)]
 #[derive(Debug, Clone, Copy, PartialOrd, PartialEq)]

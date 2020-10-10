@@ -1,7 +1,10 @@
+use crate::check::check::{
+    check_params, raise_argc_mismatch_error, raise_bottom_typed_expr_error,
+    raise_type_mismatch_error,
+};
 use crate::check::context::{CheckContext, ScopeId};
-use crate::syntax::tree::{Expr, Lit, Loc, ToLoc, Op};
+use crate::syntax::tree::{Expr, Lit, Loc, Op, ToLoc};
 use crate::CompileResult;
-use crate::check::check::{check_params, raise_bottom_typed_expr_error, raise_type_mismatch_error, raise_argc_mismatch_error};
 use std::fmt::Display;
 
 #[derive(Clone, Debug, PartialEq)]
@@ -37,7 +40,8 @@ impl Display for Types {
             Types::Char => write!(f, "char"),
             Types::Bool => write!(f, "bool"),
             Types::Applicable(ret, args) => {
-                let args = args.iter()
+                let args = args
+                    .iter()
                     .map(|t| format!("{}", t))
                     .collect::<Vec<String>>()
                     .join(",");
@@ -49,10 +53,7 @@ impl Display for Types {
 
 impl Types {
     pub fn with_loc(self, loc: Loc) -> Type {
-        Type {
-            ty: self,
-            loc,
-        }
+        Type { ty: self, loc }
     }
 
     pub fn into_type(self) -> Type {
@@ -67,29 +68,25 @@ impl Type {
     pub fn not_void(&self) -> CompileResult<()> {
         match self.ty {
             Types::Void => raise_bottom_typed_expr_error(self.loc.clone()),
-            _ => Ok(())
+            _ => Ok(()),
         }
     }
 
     pub fn is_applicable(&self, loc: &Loc) -> CompileResult<()> {
         match self.ty {
-            Types::Any |
-            Types::Applicable(_, _) => Ok(()),
-            _ => raise_type_mismatch_error(loc.clone(), None, self.clone())
+            Types::Any | Types::Applicable(_, _) => Ok(()),
+            _ => raise_type_mismatch_error(loc.clone(), None, self.clone()),
         }
     }
 
     pub fn against(&self, expected: &Type) -> CompileResult<Type> {
         match (&self.ty, &expected.ty) {
-            (Types::Any, t) |
-            (t, Types::Any) if *t != Types::Void => Ok(self.clone()),
+            (Types::Any, t) | (t, Types::Any) if *t != Types::Void => Ok(self.clone()),
 
             (lhs, rhs) if lhs == rhs => Ok(self.clone()),
 
             _ => {
-                raise_type_mismatch_error(self.loc.clone(),
-                                          Some(expected.clone()),
-                                          self.clone())?;
+                raise_type_mismatch_error(self.loc.clone(), Some(expected.clone()), self.clone())?;
                 unreachable!()
             }
         }
@@ -104,7 +101,8 @@ pub fn check_expr(ctx: &mut CheckContext, expr: &Expr) -> CompileResult<Type> {
         Expr::Lambda(loc, _, params, body) => {
             ctx.enter_scope(ScopeId::UnnamedBlock);
             check_params(ctx, params)?;
-            let args = params.iter()
+            let args = params
+                .iter()
                 .map(|p| Types::Any.with_loc(p.to_loc()))
                 .collect();
             let ret = check_expr(ctx, body.as_ref())?;
@@ -117,7 +115,7 @@ pub fn check_expr(ctx: &mut CheckContext, expr: &Expr) -> CompileResult<Type> {
                 let mut t = t.clone();
                 t.loc = id.to_loc();
                 Ok(t)
-            },
+            }
             _ => Ok(Types::Any.with_loc(id.to_loc())),
         },
 
@@ -144,9 +142,7 @@ pub fn check_expr(ctx: &mut CheckContext, expr: &Expr) -> CompileResult<Type> {
                 Types::Any => Ok(Types::Any.with_loc(loc.clone())),
                 Types::Applicable(ret, types) => {
                     if args.len() != types.len() {
-                        raise_argc_mismatch_error(loc.clone(),
-                                                  types.len(),
-                                                  args.len())?;
+                        raise_argc_mismatch_error(loc.clone(), types.len(), args.len())?;
                     }
                     for (arg, t) in args.iter().zip(types) {
                         check_expr(ctx, arg)?.against(&t)?;
@@ -164,7 +160,7 @@ pub fn check_expr(ctx: &mut CheckContext, expr: &Expr) -> CompileResult<Type> {
             t.not_void()?;
             match op {
                 Op::Not => t.against(&Types::Bool.into_type()),
-                _ => Ok(Types::Any.with_loc(loc.clone()))
+                _ => Ok(Types::Any.with_loc(loc.clone())),
             }
         }
 

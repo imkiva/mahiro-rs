@@ -34,16 +34,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "08c48aae112d48ed9f069b33538ea9e3e90aa263cfa3d1c24309612b1f7472de"
 
 [[package]]
-name = "compiler"
-version = "0.1.0"
-dependencies = [
- "lazy_static",
- "libc",
- "pest",
- "pest_derive",
-]
-
-[[package]]
 name = "digest"
 version = "0.8.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -65,6 +55,16 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "c68f0274ae0e023facc3c97b2e00f076be70e254bc851d972503b328db79b2ec"
 dependencies = [
  "typenum",
+]
+
+[[package]]
+name = "lang"
+version = "0.1.0"
+dependencies = [
+ "lazy_static",
+ "libc",
+ "pest",
+ "pest_derive",
 ]
 
 [[package]]

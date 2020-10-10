@@ -1,7 +1,7 @@
+pub mod asm;
 pub mod cfg;
 pub mod data;
 pub mod translate;
-pub mod asm;
 
 pub type LocalIndex = u16;
 pub type PoolIndex = u16;

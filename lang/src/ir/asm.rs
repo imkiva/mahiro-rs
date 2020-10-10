@@ -1,5 +1,5 @@
-use crate::ir::cfg::{BasicBlock, BBID, BBUnderlyingID};
-use crate::ir::{IR, LocalIndex};
+use crate::ir::cfg::{BBUnderlyingID, BasicBlock, BBID};
+use crate::ir::{LocalIndex, IR};
 use std::ops::Index;
 
 #[derive(Clone, Debug)]
@@ -47,7 +47,8 @@ impl MacroAssembler {
     }
 
     pub fn find_local(&mut self, name: &str) -> Option<LocalIndex> {
-        self.locals_map.iter()
+        self.locals_map
+            .iter()
             .position(|n| n.as_str() == name)
             .map(|i| i as LocalIndex)
     }

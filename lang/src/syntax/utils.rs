@@ -1,7 +1,7 @@
-use crate::syntax::tree::{Expr, Ident, Op, Stmt, Loc};
-use crate::syntax::tree::Expr::{Id, Binary, Apply};
+use crate::syntax::tree::Expr::{Apply, Binary, Id};
 use crate::syntax::tree::Stmt::Var;
 use crate::syntax::tree::VarInit::Simple;
+use crate::syntax::tree::{Expr, Ident, Loc, Op, Stmt};
 
 pub(crate) const INJECT_PREFIX: &'static str = "__compiler_injected__";
 
@@ -30,18 +30,25 @@ pub(crate) fn builtin_array_type() -> Expr {
 }
 
 pub(crate) fn access_global(name: &str) -> Expr {
-    Binary(Loc::Injected, Op::Access,
-           Box::new(Id(Ident::only("global"))),
-           Box::new(Id(Ident::only(name))))
+    Binary(
+        Loc::Injected,
+        Op::Access,
+        Box::new(Id(Ident::only("global"))),
+        Box::new(Id(Ident::only(name))),
+    )
 }
 
 pub(crate) fn apply_on(expr: Expr, name: &str, args: Vec<Expr>) -> Expr {
-    Apply(Loc::Injected, Box::new(
-        Binary(Loc::Injected,
-               Op::Access,
-               Box::new(expr),
-               Box::new(Id(Ident::only(name))))),
-          args)
+    Apply(
+        Loc::Injected,
+        Box::new(Binary(
+            Loc::Injected,
+            Op::Access,
+            Box::new(expr),
+            Box::new(Id(Ident::only(name))),
+        )),
+        args,
+    )
 }
 
 pub(crate) fn init_var(id: Ident, expr: Expr) -> Stmt {

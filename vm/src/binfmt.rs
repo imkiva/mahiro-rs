@@ -1,5 +1,1 @@
-pub struct Fn {
-
-}
-
-
+pub struct Fn {}

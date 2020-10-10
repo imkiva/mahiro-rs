@@ -1,13 +1,15 @@
-use crate::syntax::tree::{Program, Stmt, Entry, Header, Expr, Op, Case, VarInit};
-use crate::CompileResult;
+use crate::syntax::tree::Case::{Dft, Sth};
 use crate::syntax::tree::Entry::*;
+use crate::syntax::tree::Expr::{
+    Alloc, Apply, Assign, Binary, Group, Id, Lambda, Literal, Question, Ternary, Unary,
+};
 use crate::syntax::tree::Header::*;
+use crate::syntax::tree::Lit::{Array, Number, Pair};
 use crate::syntax::tree::Stmt::*;
-use crate::syntax::tree::Expr::{Literal, Unary, Alloc, Lambda, Id, Group, Assign, Apply, Binary, Ternary, Question};
-use crate::syntax::tree::Case::{Sth, Dft};
-use crate::syntax::tree::Lit::{Array, Pair, Number};
-use crate::syntax::utils::*;
 use crate::syntax::tree::VarInit::{Simple, Structured};
+use crate::syntax::tree::{Case, Entry, Expr, Header, Op, Program, Stmt, VarInit};
+use crate::syntax::utils::*;
+use crate::CompileResult;
 
 pub struct Desugar;
 
@@ -66,8 +68,7 @@ impl Desugarable for Entry {
 impl Desugarable for Header {
     fn desugar(self) -> Self {
         match self {
-            Import(name, None) =>
-                Import(name.clone(), Some(name)),
+            Import(name, None) => Import(name.clone(), Some(name)),
             hdr => hdr,
         }
     }
@@ -94,50 +95,41 @@ impl Desugarable for Stmt {
                 For(iter_id, init, cond, step, desugared_body)
             }
 
-            Var(v) =>
-                Var(v.desugar()),
+            Var(v) => Var(v.desugar()),
 
-            VarList(vars) =>
-                VarList(vars.desugar()),
+            VarList(vars) => VarList(vars.desugar()),
 
-            Func(name, param, body) =>
-                Func(name, param, body.desugar()),
+            Func(name, param, body) => Func(name, param, body.desugar()),
 
-            Return(loc, expr) =>
-                Return(loc, expr.desugar()),
+            Return(loc, expr) => Return(loc, expr.desugar()),
 
-            Throw(expr) =>
-                Throw(expr.desugar()),
+            Throw(expr) => Throw(expr.desugar()),
 
-            Try(tbody, id, cbody) =>
-                Try(tbody.desugar(), id, cbody.desugar()),
+            Try(tbody, id, cbody) => Try(tbody.desugar(), id, cbody.desugar()),
 
-            If(cond, t, f) =>
-                If(cond.desugar(), t.desugar(), f.desugar()),
+            If(cond, t, f) => If(cond.desugar(), t.desugar(), f.desugar()),
 
-            Switch(expr, cases) =>
-                Switch(expr.desugar(), cases.desugar()),
+            Switch(expr, cases) => Switch(expr.desugar(), cases.desugar()),
 
-            While(cond, body) =>
-                While(cond.desugar(), body.desugar()),
+            While(cond, body) => While(cond.desugar(), body.desugar()),
 
-            Loop(cond, body) =>
-                Loop(cond.desugar(), body.desugar()),
+            Loop(cond, body) => Loop(cond.desugar(), body.desugar()),
 
-            For(id, init, cond, step, body) =>
-                For(id, init.desugar(), cond.desugar(), step.desugar(), body.desugar()),
+            For(id, init, cond, step, body) => For(
+                id,
+                init.desugar(),
+                cond.desugar(),
+                step.desugar(),
+                body.desugar(),
+            ),
 
-            ExprStmt(expr) =>
-                ExprStmt(expr.desugar()),
+            ExprStmt(expr) => ExprStmt(expr.desugar()),
 
-            Namespace(id, body) =>
-                Namespace(id, body.desugar()),
+            Namespace(id, body) => Namespace(id, body.desugar()),
 
-            Struct(id, extends, body) =>
-                Struct(id, extends.desugar(), body.desugar()),
+            Struct(id, extends, body) => Struct(id, extends.desugar(), body.desugar()),
 
-            Block(body) =>
-                Block(body.desugar()),
+            Block(body) => Block(body.desugar()),
 
             Break(id) => Break(id),
             Continue(id) => Continue(id),
@@ -148,49 +140,39 @@ impl Desugarable for Stmt {
 impl Desugarable for Expr {
     fn desugar(self) -> Self {
         match self {
-            Literal(loc, Array(elem)) =>
-                Alloc(loc, Box::new(builtin_array_type()), elem.desugar()),
+            Literal(loc, Array(elem)) => Alloc(loc, Box::new(builtin_array_type()), elem.desugar()),
 
-            Literal(loc, Pair(k, v)) =>
-                Alloc(loc, Box::new(builtin_pair_type()), vec![(*k).desugar(), (*v).desugar()]),
+            Literal(loc, Pair(k, v)) => Alloc(
+                loc,
+                Box::new(builtin_pair_type()),
+                vec![(*k).desugar(), (*v).desugar()],
+            ),
 
-            Unary(loc, Op::Add, e) => {
-                match e.as_ref() {
-                    Literal(_, Number(n)) => Literal(loc, Number(n.abs())),
-                    _ => Unary(loc, Op::Add, e),
-                }
-            }
+            Unary(loc, Op::Add, e) => match e.as_ref() {
+                Literal(_, Number(n)) => Literal(loc, Number(n.abs())),
+                _ => Unary(loc, Op::Add, e),
+            },
 
-            Unary(loc, Op::Sub, e) => {
-                match e.as_ref() {
-                    Literal(_, Number(n)) => Literal(loc, Number(-n.clone())),
-                    _ => Unary(loc, Op::Add, e),
-                }
-            }
+            Unary(loc, Op::Sub, e) => match e.as_ref() {
+                Literal(_, Number(n)) => Literal(loc, Number(-n.clone())),
+                _ => Unary(loc, Op::Add, e),
+            },
 
-            Lambda(loc, cap, params, body) =>
-                Lambda(loc, cap, params, body.desugar()),
+            Lambda(loc, cap, params, body) => Lambda(loc, cap, params, body.desugar()),
 
-            Alloc(loc, ty, args) =>
-                Alloc(loc, ty.desugar(), args.desugar()),
+            Alloc(loc, ty, args) => Alloc(loc, ty.desugar(), args.desugar()),
 
-            Group(loc, exprs) =>
-                Group(loc, exprs.desugar()),
+            Group(loc, exprs) => Group(loc, exprs.desugar()),
 
-            Assign(loc, op, lhs, rhs) =>
-                Assign(loc, op, lhs.desugar(), rhs.desugar()),
+            Assign(loc, op, lhs, rhs) => Assign(loc, op, lhs.desugar(), rhs.desugar()),
 
-            Apply(loc, f, a) =>
-                Apply(loc, f.desugar(), a.desugar()),
+            Apply(loc, f, a) => Apply(loc, f.desugar(), a.desugar()),
 
-            Binary(loc, op, lhs, rhs) =>
-                Binary(loc, op, lhs.desugar(), rhs.desugar()),
+            Binary(loc, op, lhs, rhs) => Binary(loc, op, lhs.desugar(), rhs.desugar()),
 
-            Ternary(loc, cond, t, f) =>
-                Ternary(loc, cond.desugar(), t.desugar(), f.desugar()),
+            Ternary(loc, cond, t, f) => Ternary(loc, cond.desugar(), t.desugar(), f.desugar()),
 
-            Question(loc, cond, f) =>
-                Question(loc, cond.desugar(), f.desugar()),
+            Question(loc, cond, f) => Question(loc, cond.desugar(), f.desugar()),
 
             expr => expr,
         }
