@@ -4,110 +4,80 @@
 // Author: kiva
 //
 
-program = { SOI ~ (WHITESPACE | COMMENT | header | stmt)* ~ EOI }
+program = { SOI ~ (WHITESPACE | COMMENT | decl | stmt)* ~ EOI }
 
-header = { using_decl | import_decl | package_decl }
+decl = { import_decl | module_decl | fn_decl | struct_decl }
 
-using_decl = { "using" ~ mod_name }
 import_decl = { "import" ~ mod_name ~ ("as" ~ id)? }
-package_decl = { "package" ~ id }
+module_decl = { "module" ~ id ~ "where" }
 
 // statement
-stmt = { primary_stmt ~ SEMI? | cross_line_stmt }
-cross_line_stmt = { "@begin" ~ stmt ~ "@end"}
-primary_stmt = { throw_stmt
-               | return_stmt
-               | var_decl
-               | func_decl
-               | struct_decl
-               | namespace_decl
-               | block_decl
-               | if_stmt
-               | while_stmt
-               | switch_stmt
-               | for_stmt
-               | for_each_stmt
-               | loop_until_stmt
+stmt = { primary_stmt ~ SEMI? }
+primary_stmt = { return_stmt
+               | let_stmt
                | loop_control
-               | try_stmt
-               | expr_stmt
+               | assign_stmt
+               | expr
                }
 
-expr_stmt = { primary_prefix ~ primary_postfix+
-            }
+assign_stmt = { id ~ assign_op ~ expr }
+assign_op = { "=" | "+=" | "-=" | "*=" | "/=" | "%=" }
 
 // var
-var_kw = _ { "var" | "constant" | "const" }
-var_decl = { var_kw ~ var_init ~ ("," ~ var_init)* }
-var_init = { id ~ "=" ~ expr
-           | "(" ~ params ~ ")" ~ "=" ~ expr
-           }
+let_stmt = { "let" ~ pattern ~ "=" ~ expr }
+pattern = { maybe_typed_id
+          | "(" ~ maybe_typed_params ~ ")"
+          }
 
 // func
-func_decl = { "function" ~ id ~ callable_params ~ "override"? ~ common_body ~ "end" }
-
-// namespace
-namespace_decl = { "namespace" ~ id ~ common_body ~ "end" }
+fn_decl = { "fn" ~ id ~ "(" ~ typed_params ~ ")" ~ fn_body }
+fn_body = { "{" ~ common_body ~ "}"
+          | "=" ~ expr
+          }
 
 // struct
-struct_kw = _ { "struct" | "class" }
-struct_decl = { struct_kw ~ id ~ ("extends" ~ expr)? ~ struct_body ~ "end" }
-struct_body = { (var_decl | func_decl)* }
+struct_decl = { "struct" ~ id ~ "{" ~ struct_field* ~ "}" }
+struct_field = { typed_id ~ "," }
 
 common_body = { stmt* }
 
 // return
 return_stmt = { "return" ~ expr? }
-// throw
-throw_stmt = { "throw" ~ expr }
 
-// try
-try_stmt = { "try" ~ common_body ~ "catch" ~ id ~ common_body ~ "end" }
+// expr
+expr = { if_expr
+       | while_expr
+       | loop_expr
+       | for_expr
+       | question_expr
+       }
 
 // if
-if_stmt = { "if" ~ expr ~ SEMI? ~ common_body ~ SEMI? ~ ("else" ~ common_body)? ~ SEMI? ~ "end" }
-
-// switch
-switch_stmt = { "switch" ~ expr ~ switch_case* ~ "end" }
-switch_case = { default_case | sth_case }
-sth_case = { "case" ~ expr ~ SEMI? ~ ("end" | common_body ~ "end") }
-default_case = { "default" ~ SEMI? ~ ("end" | common_body ~ "end") }
+if_expr = { "if" ~ expr ~ "{" ~ common_body ~ "}" ~ ("else" ~ "{" ~ common_body ~ "}")? }
 
 // while
-while_stmt = { "while" ~ expr ~ common_body ~ "end" }
+while_expr = { "while" ~ expr ~ "{" ~ common_body ~ "}" }
 
 // loop
-loop_until_stmt = { "loop" ~ common_body ~ loop_until_end }
-loop_until_end = _ { "until" ~ expr | "end" }
+loop_expr = { "loop" ~ "{" ~ common_body ~ "}" }
 
 // break/continue
 loop_control = { break_ | continue_ }
-break_ = { "break" }
+break_ = { "break" ~ expr? }
 continue_ = { "continue" }
 
 // for
-for_stmt = { "for" ~ id ~ for_header ~ for_body }
-for_each_stmt = { "foreach" ~ id ~ for_each_header ~ for_body }
-for_header = _ { "=" ~ expr ~ "," ~ expr ~ "," ~ expr }
-for_each_header = _ { "in" ~ expr }
-for_body = { "do" ~ stmt | common_body ~ "end" }
-
-// block
-block_decl = { "block" ~ common_body ~ "end" }
-
-// expr
-expr = { ternary_expr }
+for_expr = { "for" ~ id ~ "in" ~ expr ~ "{" ~ common_body ~ "}" }
 
 // we must ensure that the expr after "?" should be:
 // [primary_prefix, mapping]
-ternary_expr = { logic_or_expr ~ ("?" ~ expr)? }
+question_expr = { logic_or_expr ~ "?"? }
 
 // level 6
-logic_or_expr = { logic_and_expr ~ (or_op ~ logic_and_expr)* }
+logic_or_expr = { logic_and_expr ~ ("||" ~ logic_and_expr)* }
+
 // level 7
-logic_and_expr = { relation_expr ~ (and_op ~ relation_expr)* }
-and_op = { "and" | "&&" }
-or_op = { "or" | "||" }
+logic_and_expr = { relation_expr ~ ("&&" ~ relation_expr)* }
 
 // level 9
 relation_expr = { add_expr ~ (relation_op ~ add_expr)* }
@@ -118,62 +88,47 @@ add_expr = { mul_expr ~ (add_op ~ mul_expr)* }
 add_op = { "+" | "-" }
 
 // level 11
-mul_expr = { pow_expr ~ (mul_op ~ pow_expr)* }
+mul_expr = { mod_expr ~ (mul_op ~ mod_expr)* }
 mul_op = { "*" | "/" }
 
 // level 12
-pow_expr = { unary_expr ~ (pow_op ~ unary_expr)* }
-pow_op = { "^" | "%" }
+mod_expr = { unary_expr ~ (mod_op ~ unary_expr)* }
+mod_op = { "%" }
 
 unary_expr = { unary_op ~ expr
              | primary_expr
              }
-unary_op = { not_op | add_op | deref_op | "typeid" }
-not_op = { "not" | "!" }
-deref_op = { "*" }
+unary_op = { not_op | add_op }
+not_op = { "!" }
 
 primary_expr = { primary_prefix ~ primary_postfix* }
 primary_prefix = { "(" ~ expr ~ ("," ~ expr)* ~ ")"
                  | literal
                  | lambda
-                 | allocation
                  | id
                  }
 primary_postfix = { apply
-                  | index_access
-                  | member_access
-                  | mapping
-                  | assign
-                  | flatten
+                  | member_apply
+                  | index
                   }
 
-apply = { "(" ~ args? ~ ")" }
-index_access = { "[" ~ expr ~ "]" }
-member_access = { member_access_op ~ id }
-member_access_op = _ { "." | "->" }
-mapping = { ":" ~ expr }
-assign = { assign_op ~ expr }
-assign_op = { "=" | "+=" | "-=" | "*=" | "/=" | "%=" | "^=" }
-flatten = { "..." }
+apply = { "(" ~ args ~ ")" }
+member_apply = { "." ~ id ~ apply? }
+index = { "[" ~ expr ~ "]" }
 
-lambda = { "[" ~ params? ~ "]" ~ callable_params ~ "->" ~ expr }
+lambda = { "|" ~ params ~ "|" ~ lambda_body }
+lambda_body = { expr | "{" ~ common_body ~ "}" }
 
-allocation = { allocation_op ~ expr }
-allocation_op = _ { "new" | "gcnew" }
-
-literal = { number_lit
+literal = { int_lit
+          | float_lit
           | bool_lit
-          | null_lit
           | string_lit
           | char_lit
           | array_lit
           }
 
-null_lit = { "null" }
-
-number_lit = $ { number_float
-               | number_dec
-               }
+int_lit = $ { number_dec }
+float_lit = $ { number_float }
 
 number_dec = _ { ("+" | "-")? ~ ASCII_DIGIT+ }
 
@@ -183,11 +138,11 @@ string_lit = $ { "\"" ~ (escape | (!("\\" | "\"") ~ ANY)+)* ~ "\""}
 
 char_lit = $ { "\'" ~ (escape | (!("\\" | "\'") ~ ANY)+) ~ "\'"}
 
-array_lit = { "{" ~ args? ~ ","? ~ "}" }
+array_lit = { "[" ~ args ~ "]" }
 
 bool_lit = { "true" | "false" }
 
-id = $ { !"end" ~ (ASCII_ALPHA | UNDERLINE | "$") ~ (ASCII_ALPHANUMERIC | UNDERLINE | "$")* }
+id = $ { (ASCII_ALPHA | UNDERLINE | "$") ~ (ASCII_ALPHANUMERIC | UNDERLINE | "$")* }
 
 escape = _{ "\\\\"
           | "\\\""
@@ -202,11 +157,13 @@ escape = _{ "\\\\"
           | "\\0"
           }
 
+typed_id = { id ~ ":" ~ id }
+maybe_typed_id = { id ~ (":" ~ id)? }
 params = { id ~ ("," ~ id)* }
-varargs_param = { "..." ~ id }
+typed_params = { typed_id ~ ("," ~ typed_id)* }
+maybe_typed_params = { maybe_typed_id ~ ("," ~ maybe_typed_id)* }
 mod_name = { id ~ ("." ~ id)* }
-args = { expr ~ ("," ~ expr)* }
-callable_params = { "(" ~ params? ~ (","? ~ varargs_param)? ~ ")" }
+args = { (expr ~ ",")* }
 
 UNDERLINE = _ { "_" }
 
