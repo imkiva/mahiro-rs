@@ -28,14 +28,14 @@ Decl: Decl = {
 }
 
 FnDecl: FnDecl = {
-    "fn" <sig: FnSig> <body: FnBody> => FnDecl {
+    <sig: FnSig> <body: FnBody> => FnDecl {
         sig: sig,
         body: body,
     },
 }
 
 FnSig: FnSig = {
-    <g: Generic?> <id: VarIdent> "(" <param: TypedParam> ")" <ret: ("->" TypeIdent)?> => FnSig {
+    "fn" <g: Generic?> <id: VarIdent> "(" <param: TypedParam> ")" <ret: ("->" TypeIdent)?> => FnSig {
         generic: g.unwrap_or_else(|| vec![]),
         name: id,
         param: param,
@@ -57,7 +57,7 @@ StructDecl: StructDecl = {
 }
 
 EnumDecl: EnumDecl = {
-    "enum" <id: TypeIdentNoTuple> <g: Generic?> "{" <variants: EnumVariant*> "}" => EnumDecl {
+    "enum" <id: TypeIdentNoTuple> <g: Generic?> "{" <variants: Comma<EnumVariant>> "}" => EnumDecl {
         generic: g.unwrap_or_else(|| vec![]),
         name: id,
         variants: variants,
@@ -76,7 +76,7 @@ ImplDecl: ImplDecl = {
 }
 
 TraitDecl: TraitDecl = {
-    "trait" <id: TypeIdentNoTuple> <g: Generic?> "{" <sig: FnSig*> "}" => TraitDecl {
+    "trait" <id: TypeIdentNoTuple> <g: Generic?> "{" <sig: Delim<FnSig, ";">> "}" => TraitDecl {
         generic: g.unwrap_or_else(|| vec![]),
         name: id,
         fns: sig,
