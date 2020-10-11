@@ -1,21 +1,15 @@
-extern crate pest;
 #[macro_use]
-extern crate pest_derive;
-
-use crate::error::CompileError;
-use crate::syntax::parse::MahiroParser;
-use crate::syntax::tree::Program;
+extern crate lalrpop_util;
 
 pub mod syntax;
 pub mod error;
 
 pub struct Compiler;
+pub enum CompileError {
+    ParseError,
+}
 
 pub type CompileResult<S> = Result<S, CompileError>;
 
 impl Compiler {
-    pub fn compile_to_ast(src: &str) -> CompileResult<Program> {
-        let program = MahiroParser::ast(src)?;
-        Ok(program)
-    }
 }

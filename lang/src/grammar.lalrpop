@@ -1,0 +1,342 @@
+use std::str::FromStr;
+use crate::syntax::tree::*;
+use crate::syntax::parser::utils::*;
+
+grammar;
+
+pub Module: Module = {
+    "module" <name: TypeIdentString> "where" <v: Decl*> => Module {
+        name: name,
+        decl: v,
+    }
+}
+
+Decl: Decl = {
+    "import" <module: QualifiedModuleName> <n: ("as" TypeIdentString)?> ";" => {
+        let as_name = match n {
+            None => module.last().cloned().unwrap(),
+            Some((_, name)) => name,
+        };
+        Decl::Import(module, as_name)
+    },
+
+    <FnDecl> => Decl::Fn(<>),
+    <StructDecl> => Decl::Struct(<>),
+    <EnumDecl> => Decl::Enum(<>),
+    <ImplDecl> => Decl::Impl(<>),
+    <TraitDecl> => Decl::Trait(<>),
+}
+
+FnDecl: FnDecl = {
+    "fn" <sig: FnSig> <body: FnBody> => FnDecl {
+        sig: sig,
+        body: body,
+    },
+}
+
+FnSig: FnSig = {
+    <g: Generic?> <id: VarIdent> "(" <param: TypedParam> ")" <ret: ("->" TypeIdent)?> => FnSig {
+        generic: g.unwrap_or_else(|| vec![]),
+        name: id,
+        param: param,
+        ret: ret.map(|e| e.1).unwrap_or_else(|| Type::Unit),
+    }
+}
+
+FnBody: Vec<Stmt> = {
+    "=" <Expr> ";" => vec![Stmt::Return(Some(<>))],
+    <Body> => <>,
+}
+
+StructDecl: StructDecl = {
+    "struct" <id: TypeIdentNoTuple> <g: Generic?> "{" <fields: TypedParam> "}" => StructDecl {
+        generic: g.unwrap_or_else(|| vec![]),
+        name: id,
+        fields: fields,
+    }
+}
+
+EnumDecl: EnumDecl = {
+    "enum" <id: TypeIdentNoTuple> <g: Generic?> "{" <variants: EnumVariant*> "}" => EnumDecl {
+        generic: g.unwrap_or_else(|| vec![]),
+        name: id,
+        variants: variants,
+    }
+}
+
+EnumVariant = EnumVariantHelper<TypeIdentString>;
+
+ImplDecl: ImplDecl = {
+    "impl" <g: Generic?> <trait_name: TypeIdentNoTuple> <for_type: ("for" TypeIdent)?> "{" <decl: FnDecl*> "}" => ImplDecl {
+        generic: g.unwrap_or_else(|| vec![]),
+        trait_name: trait_name,
+        for_type: for_type.map(|e| e.1),
+        fns: decl,
+    }
+}
+
+TraitDecl: TraitDecl = {
+    "trait" <id: TypeIdentNoTuple> <g: Generic?> "{" <sig: FnSig*> "}" => TraitDecl {
+        generic: g.unwrap_or_else(|| vec![]),
+        name: id,
+        fns: sig,
+    }
+}
+
+Generic: Vec<GenericParam> = {
+    "<" <Comma<Constraint>> ">" => <>,
+}
+
+Constraint: GenericParam = {
+    <name: TypeIdentString> <c: (":" Delim<TypeIdent, "+">)?> => GenericParam {
+        name: name,
+        constraints: match c {
+            None => vec![],
+            Some((_, c)) => c.into_iter().map(|c| Constraint::MustImpl(c)).collect(),
+        }
+    }
+}
+
+Expr: Expr = {
+    "if" <cond: Expr> <t: Body> <el: ("else" Body)?> => Expr::If(Box::new(cond), t, el.map(|e| e.1)),
+    "while" <cond: Expr> <b: Body> => Expr::While(Box::new(cond), b),
+    "loop" <Body> => Expr::While(Box::new(Expr::LitBool(true)), <>),
+    "for" <id: VarIdent> "in" <e: Expr> <b: Body> => Expr::For(id, Box::new(e), b),
+    <QuestionExpr> => <>
+}
+
+QuestionExpr: Expr = {
+    <e: LogicalOrExpr> <q: "?"?> => match q {
+        Some(_) => unimplemented!(),
+        None => e,
+    }
+}
+
+LogicalOrExpr = BinaryExpr<LogicalAndExpr, LogicalOrOp>;
+LogicalAndExpr = BinaryExpr<RelationExpr, LogicalAndOp>;
+RelationExpr = BinaryExpr<AddExpr, RelationOp>;
+AddExpr = BinaryExpr<MulExpr, AddOp>;
+MulExpr = BinaryExpr<ModExpr, MulOp>;
+ModExpr = BinaryExpr<UnaryExpr, ModOp>;
+
+UnaryExpr: Expr = {
+    <op: UnaryOp> <e: PrimaryExpr> => Expr::Unary(op, Box::new(e)),
+    <PrimaryExpr> => <>,
+}
+
+PrimaryExpr: Expr = {
+    <l: PrimaryPrefix> <p: (PrimaryPostfix)*> => p.into_iter().fold(l, |l, p| match p {
+        Postfix::Apply(a) => match l {
+            Expr::Member(l, id) => Expr::MemberApply(l, id, a),
+            _ => Expr::Apply(Box::new(l), a),
+        },
+        Postfix::Member(id) => Expr::Member(Box::new(l), id),
+        Postfix::Index(i) => Expr::Index(Box::new(l), Box::new(i))
+    }),
+}
+
+PrimaryPrefix: Expr = {
+    IntLit => Expr::LitInt(<>),
+    FloatLit => Expr::LitFloat(<>),
+    StringLit => Expr::LitString(<>),
+    CharLit => Expr::LitChar(<>),
+    "true" => Expr::LitBool(true),
+    "false" => Expr::LitBool(false),
+    "[" <Args> "]" => Expr::LitArray(<>),
+    "(" <a: Args> ")" => match a.len() {
+        0 => Expr::LitUnit,
+        1 => {
+            let mut a = a;
+            a.pop().unwrap()
+        },
+        _ => Expr::Tuple(<>),
+    },
+    "|" <p: MaybeTypedParam> "|" <body: LambdaBody> => Expr::Lambda(
+        p,
+        body,
+    ),
+    VarIdent => Expr::Id(<>),
+}
+
+LambdaBody: Vec<Stmt> = {
+    "(" <Expr> ")" => vec![Stmt::Return(Some(<>))],
+    <Body> => <>,
+}
+
+PrimaryPostfix: Postfix = {
+    "(" <Args> ")" => Postfix::Apply(<>),
+    "." <VarIdent> => Postfix::Member(<>),
+    "[" <Expr> "]" => Postfix::Index(<>),
+}
+
+Stmt: Stmt = {
+    <Expr> ";" => Stmt::Expr(<>),
+    <id: VarIdent> <op: AssignOp> <e: Expr> ";" => Stmt::Assign(op, id, e),
+    "let" <p: Pattern> "=" <e: Expr> ";" => Stmt::Let(p, e),
+    "return" <e: Expr?> ";" => Stmt::Return(e),
+    "break" <e: Expr?> ";" => Stmt::Break(e),
+    "continue" ";" => Stmt::Continue,
+}
+
+Pattern: Pattern = {
+    <MaybeTypedId> => Pattern::Id(<>),
+    "(" <MaybeTypedParam> ")" => Pattern::Tuple(<>),
+    <PatEnumVariant> => Pattern::Enum(<>),
+}
+
+PatEnumVariant = EnumVariantHelper<VarIdent>;
+
+TypedId: Param = {
+    <id: VarIdent> ":" <ty: TypeIdent> => Param {
+        name: id,
+        ty: Some(ty),
+    }
+}
+
+MaybeTypedId: Param = {
+    <id: VarIdent> <ty: (":" TypeIdent)?> => Param {
+        name: id,
+        ty: ty.map(|e| e.1),
+    }
+}
+
+MaybeTypedParam = Comma<MaybeTypedId>;
+TypedParam = Comma<TypedId>;
+
+Args: Vec<Expr> = Comma<Expr>;
+Body: Vec<Stmt> = {
+    "{" <Stmt*> "}" => <>,
+}
+LogicalOrOp: BinaryOp = {
+    "||" => BinaryOp::LogicalOr,
+}
+LogicalAndOp: BinaryOp = {
+    "&&" => BinaryOp::LogicalAnd,
+}
+RelationOp: BinaryOp = {
+    ">" => BinaryOp::Gt,
+    "<" => BinaryOp::Lt,
+    ">=" => BinaryOp::Ge,
+    "<=" => BinaryOp::Le,
+    "==" => BinaryOp::Eq,
+    "!=" => BinaryOp::Ne,
+}
+AddOp: BinaryOp = {
+    "+" => BinaryOp::Add,
+    "-" => BinaryOp::Sub,
+}
+MulOp: BinaryOp = {
+    "*" => BinaryOp::Mul,
+    "/" => BinaryOp::Div,
+}
+ModOp: BinaryOp = {
+    "%" => BinaryOp::Mod,
+}
+UnaryOp: UnaryOp = {
+    "!" => UnaryOp::Not,
+    "+" => UnaryOp::Positive,
+    "-" => UnaryOp::Negative,
+}
+AssignOp: AssignOp = {
+    "=" => AssignOp::Assign,
+    "+=" => AssignOp::AddAssign,
+    "-=" => AssignOp::SubAssign,
+    "*=" => AssignOp::MulAssign,
+    "/=" => AssignOp::DivAssign,
+    "%=" => AssignOp::ModAssign,
+}
+
+IntLit: i32 = {
+    <s:@L> <i:r"-?[0-9]+"> <e:@L> => {
+        i32::from_str(i).unwrap()
+    }
+}
+
+FloatLit: f32 = {
+    <s:@L> <f:r"-?[0-9]+\.+[0-9]*"> <e:@L> => {
+        f32::from_str(f).unwrap()
+    }
+}
+
+StringLit: String = {
+    <x:r#""(([^\\"]|\\.)*)""#> => {
+        x[1..(x.len() - 1)].to_string()
+    }
+}
+
+CharLit: char = {
+    <x:r#"'(([^\\']|\\.))'"#> => {
+        x[1..(x.len() - 1)].chars().nth(0).unwrap()
+    }
+}
+
+VarIdent: Ident = {
+    <v:r"[a-z][A-Za-z_0-9]*"> => {
+        v.to_string()
+    }
+}
+
+TypeIdentString: Ident = {
+    <v:r"[A-Z][A-Za-z_0-9]*"> => v.to_string(),
+}
+
+TypeIdent: Type = {
+    <TypeIdentNoTuple> => <>,
+    "(" <Comma<TypeIdent>> ")" => Type::Tuple(<>),
+}
+
+TypeIdentNoTuple: Type = {
+    <v:r"[A-Z][A-Za-z_0-9]*"> => match v {
+        "Unit" => Type::Unit,
+        "Int8" => Type::Int8,
+        "Int16" => Type::Int16,
+        "Int32" => Type::Int32,
+        "Int64" => Type::Int64,
+        "UInt8" => Type::UInt8,
+        "UInt16" => Type::UInt16,
+        "UInt32" => Type::UInt32,
+        "UInt64" => Type::UInt64,
+        "Float32" => Type::Float32,
+        "Float64" => Type::Float64,
+        "Char" => Type::Char,
+        "Bool" => Type::Bool,
+        "String" => Type::String,
+        _ => Type::User(v.to_string()),
+    }
+}
+
+QualifiedModuleName: Vec<Ident> = Delim<TypeIdentString, ".">;
+
+#[inline]
+Comma<E>: Vec<E> = Delim<E, ",">;
+
+#[inline]
+Delim<E,D>: Vec<E> = {
+    <v:(<E> D)*> <e:E?> => match e { // (2)
+         None => v,
+         Some(e) => {
+             let mut v = v;
+             v.push(e);
+             v
+         }
+     }
+}
+
+#[inline]
+BinaryExpr<LRType, Op>: Expr = {
+    <e: LRType> <rhs: (Op LRType)*> => match rhs.len() {
+        0 => e,
+        _ => rhs.into_iter().fold(e, |l, (op, r)| Expr::Binary(op, Box::new(l), Box::new(r))),
+    }
+}
+
+#[inline]
+EnumVariantHelper<T>: EnumVariant = {
+    <name: TypeIdentString> <fields: ("(" Comma<T> ")")?> => EnumVariant {
+        name: name,
+        fields: match fields {
+            None => vec![],
+            Some((_, fields, _)) => fields,
+        }
+    }
+}
