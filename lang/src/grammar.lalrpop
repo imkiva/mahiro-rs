@@ -215,7 +215,7 @@ Stmt: Stmt = {
 LetPattern: LetPattern = {
     "_" => LetPattern::Wildcard,
     <MaybeTypedId> => LetPattern::Id(<>),
-    "(" <MaybeTypedParam> ")" => LetPattern::Tuple(<>),
+    "(" <p: Comma<LetPattern>> ")" => LetPattern::Tuple(p),
     <PatEnumVariant> => LetPattern::Enum(<>),
 }
 

@@ -100,7 +100,7 @@ pub enum Stmt {
 pub enum LetPattern {
   Id(Param),
   Enum(EnumVariant),
-  Tuple(Vec<Param>),
+  Tuple(Vec<LetPattern>),
   Wildcard,
 }
 
