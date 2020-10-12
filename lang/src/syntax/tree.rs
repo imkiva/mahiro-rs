@@ -28,12 +28,6 @@ pub struct Module {
 }
 
 #[derive(Debug, Clone)]
-pub struct EnumVariant {
-  pub name: Ident,
-  pub fields: Vec<Ident>,
-}
-
-#[derive(Debug, Clone)]
 pub struct FnSig {
   pub generic: Vec<GenericParam>,
   pub name: Ident,
@@ -59,6 +53,12 @@ pub struct EnumDecl {
   pub generic: Vec<GenericParam>,
   pub name: Type,
   pub variants: Vec<EnumVariant>,
+}
+
+#[derive(Debug, Clone)]
+pub struct EnumVariant {
+  pub name: Ident,
+  pub fields: Vec<Ident>,
 }
 
 #[derive(Debug, Clone)]
@@ -89,7 +89,7 @@ pub enum Decl {
 #[derive(Debug, Clone)]
 pub enum Stmt {
   Return(Option<Expr>),
-  Let(Pattern, Expr),
+  Let(LetPattern, Expr),
   Assign(AssignOp, Ident, Expr),
   Expr(Expr),
   Break(Option<Expr>),
@@ -97,10 +97,26 @@ pub enum Stmt {
 }
 
 #[derive(Debug, Clone)]
-pub enum Pattern {
+pub enum LetPattern {
   Id(Param),
   Enum(EnumVariant),
   Tuple(Vec<Param>),
+  Wildcard,
+}
+
+#[derive(Debug, Clone)]
+pub enum MatchPattern {
+  Id(Param),
+  Enum(EnumVariant),
+  Tuple(Vec<MatchPattern>),
+  Lit(Lit),
+  Wildcard,
+}
+
+#[derive(Debug, Clone)]
+pub struct MatchCase {
+  pub pat: MatchPattern,
+  pub action: Vec<Stmt>,
 }
 
 #[derive(Debug, Clone)]
@@ -155,9 +171,14 @@ pub enum AssignOp {
 }
 
 #[derive(Debug, Clone)]
-pub enum MatchCase {
-  Pat(Pattern, Vec<Stmt>),
-  Wildcard(Vec<Stmt>),
+pub enum Lit {
+  LitUnit,
+  LitInt(i32),
+  LitFloat(f32),
+  LitChar(char),
+  LitBool(bool),
+  LitString(String),
+  LitArray(Vec<Expr>),
 }
 
 #[derive(Debug, Clone)]
@@ -168,13 +189,7 @@ pub enum Expr {
   Match(Box<Expr>, Vec<MatchCase>),
   Binary(BinaryOp, Box<Expr>, Box<Expr>),
   Unary(UnaryOp, Box<Expr>),
-  LitUnit,
-  LitInt(i32),
-  LitFloat(f32),
-  LitChar(char),
-  LitBool(bool),
-  LitString(String),
-  LitArray(Vec<Expr>),
+  Lit(Lit),
   Tuple(Vec<Expr>),
   Lambda(Vec<Param>, Vec<Stmt>),
   Id(Ident),

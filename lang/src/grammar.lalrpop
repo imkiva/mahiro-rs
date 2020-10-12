@@ -105,9 +105,38 @@ Constraint: GenericParam = {
 Expr: Expr = {
     "if" <cond: Expr> <t: Body> <el: ("else" Body)?> => Expr::If(Box::new(cond), t, el.map(|e| e.1)),
     "while" <cond: Expr> <b: Body> => Expr::While(Box::new(cond), b),
-    "loop" <Body> => Expr::While(Box::new(Expr::LitBool(true)), <>),
+    "loop" <Body> => Expr::While(Box::new(Expr::Lit(Lit::LitBool(true))), <>),
     "for" <id: VarIdent> "in" <e: Expr> <b: Body> => Expr::For(id, Box::new(e), b),
+    "match" <e: Expr> "{" <c: MatchCase*> "}" => Expr::Match(Box::new(e), c),
     <QuestionExpr> => <>
+}
+
+MatchCase: MatchCase = {
+    <p: MatchPattern> "=>" <a: MatchAction> => MatchCase {
+        pat: p,
+        action: a,
+    }
+}
+
+MatchPattern: MatchPattern = {
+    "_" => MatchPattern::Wildcard,
+    <MaybeTypedId> => MatchPattern::Id(<>),
+    "(" <p: Comma<MatchPattern>> ")" => match p.len() {
+        0 => MatchPattern::Lit(Lit::LitUnit),
+        _ => MatchPattern::Tuple(p),
+    },
+    <PatEnumVariant> => MatchPattern::Enum(<>),
+    <l: IntLit> => MatchPattern::Lit(Lit::LitInt(l)),
+    <l: FloatLit> <a: MatchAction> => MatchPattern::Lit(Lit::LitFloat(l)),
+    <l: StringLit> <a: MatchAction> => MatchPattern::Lit(Lit::LitString(l)),
+    <l: CharLit> <a: MatchAction> => MatchPattern::Lit(Lit::LitChar(l)),
+    "true" => MatchPattern::Lit(Lit::LitBool(true)),
+    "false" => MatchPattern::Lit(Lit::LitBool(false)),
+}
+
+MatchAction: Vec<Stmt> = {
+    <Body> => <>,
+    <Expr> "," => vec![Stmt::Expr(<>)],
 }
 
 QuestionExpr: Expr = {
@@ -141,15 +170,15 @@ PrimaryExpr: Expr = {
 }
 
 PrimaryPrefix: Expr = {
-    IntLit => Expr::LitInt(<>),
-    FloatLit => Expr::LitFloat(<>),
-    StringLit => Expr::LitString(<>),
-    CharLit => Expr::LitChar(<>),
-    "true" => Expr::LitBool(true),
-    "false" => Expr::LitBool(false),
-    "[" <Args> "]" => Expr::LitArray(<>),
+    IntLit => Expr::Lit(Lit::LitInt(<>)),
+    FloatLit => Expr::Lit(Lit::LitFloat(<>)),
+    StringLit => Expr::Lit(Lit::LitString(<>)),
+    CharLit => Expr::Lit(Lit::LitChar(<>)),
+    "true" => Expr::Lit(Lit::LitBool(true)),
+    "false" => Expr::Lit(Lit::LitBool(false)),
+    "[" <Args> "]" => Expr::Lit(Lit::LitArray(<>)),
     "(" <a: Args> ")" => match a.len() {
-        0 => Expr::LitUnit,
+        0 => Expr::Lit(Lit::LitUnit),
         1 => {
             let mut a = a;
             a.pop().unwrap()
@@ -177,16 +206,17 @@ PrimaryPostfix: Postfix = {
 Stmt: Stmt = {
     <Expr> ";" => Stmt::Expr(<>),
     <id: VarIdent> <op: AssignOp> <e: Expr> ";" => Stmt::Assign(op, id, e),
-    "let" <p: Pattern> "=" <e: Expr> ";" => Stmt::Let(p, e),
+    "let" <p: LetPattern> "=" <e: Expr> ";" => Stmt::Let(p, e),
     "return" <e: Expr?> ";" => Stmt::Return(e),
     "break" <e: Expr?> ";" => Stmt::Break(e),
     "continue" ";" => Stmt::Continue,
 }
 
-Pattern: Pattern = {
-    <MaybeTypedId> => Pattern::Id(<>),
-    "(" <MaybeTypedParam> ")" => Pattern::Tuple(<>),
-    <PatEnumVariant> => Pattern::Enum(<>),
+LetPattern: LetPattern = {
+    "_" => LetPattern::Wildcard,
+    <MaybeTypedId> => LetPattern::Id(<>),
+    "(" <MaybeTypedParam> ")" => LetPattern::Tuple(<>),
+    <PatEnumVariant> => LetPattern::Enum(<>),
 }
 
 PatEnumVariant = EnumVariantHelper<VarIdent>;
