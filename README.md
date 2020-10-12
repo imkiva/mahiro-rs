@@ -1,5 +1,6 @@
 mahiro-rs
 =========
 
-The Mahiro VM written in Rust.
+Full-featured language frontend for PL's learning purpose.
+
 
