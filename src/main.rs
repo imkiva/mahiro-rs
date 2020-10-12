@@ -1,7 +1,8 @@
-use mahiro_lang::syntax::parser::ModuleParser;
+use mahiro_lang::{CompileResult, Compiler};
 
-fn main() {
-    let m = ModuleParser::new().parse(r#"
+fn main() -> CompileResult<()> {
+  let m = Compiler::compile(
+    r#"
     module Main where
     enum Option<T> {
         Some(T),
@@ -12,8 +13,11 @@ fn main() {
         fn nice(a: UInt32) -> Bool;
     }
     fn main() {
-        println("hello");
+        println("hello")
     }
-    "#);
-    println!("{:#?}", m);
+    "#,
+  )?;
+  println!("{:#?}", m);
+
+  Ok(())
 }

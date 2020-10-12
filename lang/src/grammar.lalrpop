@@ -1,8 +1,13 @@
 use std::str::FromStr;
 use crate::syntax::tree::*;
+use crate::syntax::parser::*;
 use crate::syntax::parser::utils::*;
 
-grammar;
+grammar(state: &mut State);
+
+extern {
+    type Error = UserError;
+}
 
 pub Module: Module = {
     "module" <name: TypeIdentString> "where" <v: Decl*> => Module {
@@ -247,14 +252,24 @@ AssignOp: AssignOp = {
 }
 
 IntLit: i32 = {
-    <s:@L> <i:r"-?[0-9]+"> <e:@L> => {
-        i32::from_str(i).unwrap()
+    <s:@L> <i:r"-?[0-9]+"> <e:@L> =>? {
+        i32::from_str(i).map_err(|_| ParseError::User {
+            error: UserError {
+                kind: MahiroParseErrorKind::LiteralTooLarge,
+                location: s,
+            }
+        })
     }
 }
 
 FloatLit: f32 = {
-    <s:@L> <f:r"-?[0-9]+\.+[0-9]*"> <e:@L> => {
-        f32::from_str(f).unwrap()
+    <s:@L> <f:r"-?[0-9]+\.+[0-9]*"> <e:@L> =>? {
+        f32::from_str(f).map_err(|_| ParseError::User {
+            error: UserError {
+                kind: MahiroParseErrorKind::LiteralTooLarge,
+                location: s,
+            }
+        })
     }
 }
 
@@ -286,23 +301,7 @@ TypeIdent: Type = {
 }
 
 TypeIdentNoTuple: Type = {
-    <v:r"[A-Z][A-Za-z_0-9]*"> => match v {
-        "Unit" => Type::Unit,
-        "Int8" => Type::Int8,
-        "Int16" => Type::Int16,
-        "Int32" => Type::Int32,
-        "Int64" => Type::Int64,
-        "UInt8" => Type::UInt8,
-        "UInt16" => Type::UInt16,
-        "UInt32" => Type::UInt32,
-        "UInt64" => Type::UInt64,
-        "Float32" => Type::Float32,
-        "Float64" => Type::Float64,
-        "Char" => Type::Char,
-        "Bool" => Type::Bool,
-        "String" => Type::String,
-        _ => Type::User(v.to_string()),
-    }
+    <v:r"[A-Z][A-Za-z_0-9]*"> => Type::from_simple_type_name(v),
 }
 
 QualifiedModuleName: Vec<Ident> = Delim<TypeIdentString, ".">;
