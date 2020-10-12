@@ -1,7 +1,4 @@
-use crate::syntax::tree::{
-  Constraint, Decl, EnumDecl, EnumVariant, Expr, FnDecl, FnSig, GenericParam, ImplDecl, LetPattern,
-  Lit, MatchCase, MatchPattern, Module, Param, Stmt, StructDecl, TraitDecl,
-};
+use crate::syntax::tree::{Constraint, Decl, EnumDecl, Expr, FnDecl, FnSig, GenericParam, ImplDecl, LetPattern, Lit, MatchCase, MatchPattern, Module, Param, Stmt, StructDecl, TraitDecl, PatEnumVariant, Ident};
 
 pub struct PrettyPrinter {
   pub indent_per_level: usize,
@@ -403,14 +400,20 @@ impl PrettyPrint for Constraint {
   }
 }
 
-impl PrettyPrint for EnumVariant {
+impl PrettyPrint for Ident {
+  fn pretty_print(&self) -> String {
+    self.clone()
+  }
+}
+
+impl<T: PrettyPrint> PrettyPrint for PatEnumVariant<T> {
   fn pretty_print(&self) -> String {
     format!(
       "{}{}",
       self.name,
       match self.fields.len() {
         0 => "".to_string(),
-        _ => format!("({})", self.fields.join(", ")),
+        _ => format!("({})", self.fields.join_pretty_print(", ")),
       }
     )
   }

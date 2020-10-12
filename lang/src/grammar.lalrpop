@@ -126,7 +126,7 @@ MatchPattern: MatchPattern = {
         0 => MatchPattern::Lit(Lit::LitUnit),
         _ => MatchPattern::Tuple(p),
     },
-    <PatEnumVariant> => MatchPattern::Enum(<>),
+    <MatchPatEnumVariant> => MatchPattern::Enum(<>),
     <l: IntLit> => MatchPattern::Lit(Lit::LitInt(l)),
     <l: FloatLit> <a: MatchAction> => MatchPattern::Lit(Lit::LitFloat(l)),
     <l: StringLit> <a: MatchAction> => MatchPattern::Lit(Lit::LitString(l)),
@@ -144,16 +144,22 @@ QuestionExpr: Expr = {
     <e: LogicalOrExpr> <q: "?"?> => match q {
         Some(_) => Expr::Match(Box::new(e), vec![
             MatchCase {
-                pat: MatchPattern::Enum(EnumVariant {
+                pat: MatchPattern::Enum(MatchPatEnumVariant {
                     name: "Ok".to_string(),
-                    fields: vec!["v".to_string()],
+                    fields: vec![MatchPattern::Id(Param {
+                        name: "v".to_string(),
+                        ty: None,
+                    })],
                 }),
                 action: vec![Stmt::ResultExpr(Expr::Id("v".to_string()))],
             },
             MatchCase {
-                pat: MatchPattern::Enum(EnumVariant {
+                pat: MatchPattern::Enum(MatchPatEnumVariant {
                     name: "Err".to_string(),
-                    fields: vec!["err".to_string()],
+                    fields: vec![MatchPattern::Id(Param {
+                        name: "err".to_string(),
+                        ty: None,
+                    })],
                 }),
                 action: vec![Stmt::ResultExpr(Expr::Id("err".to_string()))],
             },
@@ -232,10 +238,8 @@ LetPattern: LetPattern = {
     "_" => LetPattern::Wildcard,
     <MaybeTypedId> => LetPattern::Id(<>),
     "(" <p: Comma<LetPattern>> ")" => LetPattern::Tuple(p),
-    <PatEnumVariant> => LetPattern::Enum(<>),
+    <LetPatEnumVariant> => LetPattern::Enum(<>),
 }
-
-PatEnumVariant = EnumVariantHelper<VarIdent>;
 
 TypedId: Param = {
     <id: VarIdent> ":" <ty: TypeIdent> => Param {
@@ -385,6 +389,28 @@ BinaryExpr<LRType, Op>: Expr = {
 #[inline]
 EnumVariantHelper<T>: EnumVariant = {
     <name: TypeIdentString> <fields: ("(" Comma<T> ")")?> => EnumVariant {
+        name: name,
+        fields: match fields {
+            None => vec![],
+            Some((_, fields, _)) => fields,
+        }
+    }
+}
+
+#[inline]
+LetPatEnumVariant: PatEnumVariant<LetPattern> = {
+    <name: TypeIdentString> <fields: ("(" Comma<LetPattern> ")")?> => LetPatEnumVariant {
+        name: name,
+        fields: match fields {
+            None => vec![],
+            Some((_, fields, _)) => fields,
+        }
+    }
+}
+
+#[inline]
+MatchPatEnumVariant: PatEnumVariant<MatchPattern> = {
+    <name: TypeIdentString> <fields: ("(" Comma<MatchPattern> ")")?> => MatchPatEnumVariant {
         name: name,
         fields: match fields {
             None => vec![],

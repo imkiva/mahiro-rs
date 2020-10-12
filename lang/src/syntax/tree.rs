@@ -60,10 +60,14 @@ pub struct EnumDecl {
 }
 
 #[derive(Debug, Clone)]
-pub struct EnumVariant {
+pub struct PatEnumVariant<F> {
   pub name: Ident,
-  pub fields: Vec<Ident>,
+  pub fields: Vec<F>,
 }
+
+pub type EnumVariant = PatEnumVariant<Ident>;
+pub type LetPatEnumVariant = PatEnumVariant<LetPattern>;
+pub type MatchPatEnumVariant = PatEnumVariant<MatchPattern>;
 
 #[derive(Debug, Clone)]
 pub struct ImplDecl {
@@ -104,7 +108,7 @@ pub enum Stmt {
 #[derive(Debug, Clone)]
 pub enum LetPattern {
   Id(Param),
-  Enum(EnumVariant),
+  Enum(LetPatEnumVariant),
   Tuple(Vec<LetPattern>),
   Wildcard,
 }
@@ -112,7 +116,7 @@ pub enum LetPattern {
 #[derive(Debug, Clone)]
 pub enum MatchPattern {
   Id(Param),
-  Enum(EnumVariant),
+  Enum(MatchPatEnumVariant),
   Tuple(Vec<MatchPattern>),
   Lit(Lit),
   Wildcard,

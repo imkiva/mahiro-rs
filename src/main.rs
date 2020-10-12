@@ -29,13 +29,15 @@ fn main() -> CompileResult<()> {
         };
         match nice() {
           Some(a) => fuck,
-          Some(a) => shit,
+          Some(_) => shit,
+          Some((_, _, a, _, _)) => shit,
           None => apple,
           _ => {
             return "hello world";
           }
         };
         let Some(t) = a;
+        let Some(_) = a;
     }
     "#,
   )?;
