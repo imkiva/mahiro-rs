@@ -1,4 +1,4 @@
-use std::fmt::{Display, Formatter};
+use std::fmt::{Display};
 
 pub type Ident = String;
 
@@ -19,7 +19,7 @@ pub enum Type {
   Bool,
   String,
   SelfType,
-  //Generic(Box<Type>, Vec<Type>),
+  Generic(Box<Type>, Vec<Type>),
   User(Ident),
   Tuple(Vec<Type>),
 }
@@ -244,6 +244,15 @@ impl Display for Type {
       Type::Bool => write!(f, "Bool"),
       Type::String => write!(f, "String"),
       Type::SelfType => write!(f, "Self"),
+      Type::Generic(ctor, param) => write!(
+        f,
+        "{}<{}>",
+        ctor.as_ref(),
+        param.iter()
+          .map(|t| format!("{}", t))
+          .collect::<Vec<_>>()
+          .join(", ")
+      ),
       Type::User(ty) => write!(f, "{}", ty),
       Type::Tuple(t) => write!(
         f,

@@ -11,7 +11,7 @@ fn main() -> CompileResult<()> {
     }
     trait Hello {
         fn say();
-        fn nice(a: UInt32) -> Bool;
+        fn nice(a: UInt32) -> Option<Option<Int32>>;
     }
     fn main() {
         println("hello");

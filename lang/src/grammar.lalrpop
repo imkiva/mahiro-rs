@@ -55,7 +55,7 @@ FnBody: Vec<Stmt> = {
 }
 
 StructDecl: StructDecl = {
-    "struct" <id: TypeIdentNoTuple> <g: Generic?> "{" <fields: TypedParam> "}" => StructDecl {
+    "struct" <id: SimpleTypeIdent> <g: Generic?> "{" <fields: TypedParam> "}" => StructDecl {
         generic: g.unwrap_or_else(|| vec![]),
         name: id,
         fields: fields,
@@ -63,7 +63,7 @@ StructDecl: StructDecl = {
 }
 
 EnumDecl: EnumDecl = {
-    "enum" <id: TypeIdentNoTuple> <g: Generic?> "{" <variants: Comma<EnumVariant>> "}" => EnumDecl {
+    "enum" <id: SimpleTypeIdent> <g: Generic?> "{" <variants: Comma<EnumVariant>> "}" => EnumDecl {
         generic: g.unwrap_or_else(|| vec![]),
         name: id,
         variants: variants,
@@ -82,7 +82,7 @@ ImplDecl: ImplDecl = {
 }
 
 TraitDecl: TraitDecl = {
-    "trait" <id: TypeIdentNoTuple> <g: Generic?> "{" <sig: Delim<FnSig, ";">> "}" => TraitDecl {
+    "trait" <id: SimpleTypeIdent> <g: Generic?> "{" <sig: Delim<FnSig, ";">> "}" => TraitDecl {
         generic: g.unwrap_or_else(|| vec![]),
         name: id,
         fns: sig,
@@ -347,7 +347,14 @@ TypeIdent: Type = {
 }
 
 TypeIdentNoTuple: Type = {
-    <v:r"[A-Z][A-Za-z_0-9]*"> => Type::from_simple_type_name(v),
+    <v: SimpleTypeIdent> <g: ("<" Comma<TypeIdent> ">")?> => match g {
+        None => v,
+        Some((_, param, _)) => Type::Generic(Box::new(v), param),
+    },
+}
+
+SimpleTypeIdent: Type = {
+    <v: r"[A-Z][A-Za-z_0-9]*"> => Type::from_simple_type_name(v),
 }
 
 QualifiedModuleName: Vec<Ident> = Delim<TypeIdentString, ".">;
