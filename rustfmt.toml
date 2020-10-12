@@ -1,0 +1,5 @@
+edition = "2018"
+merge_imports = true
+color = "Always"
+wrap_comments = true
+tab_spaces = 2
