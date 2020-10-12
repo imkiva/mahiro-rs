@@ -14,6 +14,28 @@ fn main() -> CompileResult<()> {
     }
     fn main() {
         println("hello");
+        if a {
+          fuck;
+        } else {
+          shit;
+        };
+        while true {
+          fuck;
+          shit;
+        };
+        for i in shit {
+          i.drop();
+          i.take();
+        };
+        match nice() {
+          Some(a) => fuck,
+          Some(a) => shit,
+          None => apple,
+          _ => {
+            return "hello world";
+          }
+        };
+        let Some(t) = a;
     }
     "#,
   )?;

@@ -87,7 +87,6 @@ impl State {
 
     self.indent_level += 1;
     for stmt in &f.body {
-      self.print_indent();
       self.print_stmt(stmt);
     }
     self.indent_level -= 1;
@@ -210,6 +209,7 @@ impl State {
       }
       Stmt::ResultExpr(e) => {
         self.print_expr(e);
+        println!();
       }
       Stmt::Break(Some(e)) => {
         println!("break ");
@@ -266,19 +266,19 @@ impl State {
       }
       Expr::Lit(Lit::LitArray(a)) => {
         print!("[");
-        a.iter().for_each(|a| {
-          self.print_expr(a);
-          print!(", ");
-        });
+        for (i, x) in a.iter().enumerate() {
+          self.print_expr(x);
+          print!("{}", if i == (a.len() - 1) { "" } else { "," });
+        }
         print!("]");
       }
       Expr::Lit(lit) => print!("{}", lit.pretty_print()),
       Expr::Tuple(t) => {
         print!("(");
-        t.iter().for_each(|a| {
-          self.print_expr(a);
-          print!(", ");
-        });
+        for (i, x) in t.iter().enumerate() {
+          self.print_expr(x);
+          print!("{}", if i == (t.len() - 1) { "" } else { "," });
+        }
         print!(")");
       }
       Expr::Lambda(p, body) => {
@@ -289,19 +289,19 @@ impl State {
       Expr::Apply(e, a) => {
         self.print_expr(e.as_ref());
         print!("(");
-        a.iter().for_each(|a| {
-          self.print_expr(a);
-          print!(", ");
-        });
+        for (i, x) in a.iter().enumerate() {
+          self.print_expr(x);
+          print!("{}", if i == (a.len() - 1) { "" } else { "," });
+        }
         print!(")");
       }
       Expr::MemberApply(e, m, a) => {
         self.print_expr(e.as_ref());
         print!(".{}(", m);
-        a.iter().for_each(|a| {
-          self.print_expr(a);
-          print!(", ");
-        });
+        for (i, x) in a.iter().enumerate() {
+          self.print_expr(x);
+          print!("{}", if i == (a.len() - 1) { "" } else { "," });
+        }
         print!(")");
       }
       Expr::Member(e, m) => {
@@ -322,7 +322,6 @@ impl State {
 
     self.indent_level += 1;
     body.iter().for_each(|stmt| {
-      self.print_indent();
       self.print_stmt(stmt);
     });
     self.indent_level -= 1;
@@ -333,15 +332,16 @@ impl State {
 
   fn print_match_cases(&mut self, cases: &Vec<MatchCase>) {
     println!("{{");
-
+  
     self.indent_level += 1;
     cases.iter().for_each(|case| {
       self.print_indent();
       print!("{} => ", case.pat.pretty_print());
       self.print_body(&case.action);
+      println!();
     });
     self.indent_level -= 1;
-
+  
     self.print_indent();
     print!("}}");
   }
