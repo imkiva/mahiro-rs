@@ -1,4 +1,7 @@
-use crate::syntax::tree::{Constraint, Decl, EnumDecl, Expr, FnDecl, FnSig, GenericParam, ImplDecl, LetPattern, Lit, MatchCase, MatchPattern, Module, Param, Stmt, StructDecl, TraitDecl, PatEnumVariant, Ident};
+use crate::syntax::tree::{
+  Constraint, Decl, EnumDecl, Expr, FnDecl, FnSig, GenericParam, Ident, ImplDecl, LetPattern, Lit,
+  MatchCase, MatchPattern, Module, Param, PatEnumVariant, Stmt, StructDecl, TraitDecl,
+};
 
 pub struct PrettyPrinter {
   pub indent_per_level: usize,
@@ -329,7 +332,7 @@ impl State {
 
   fn print_match_cases(&mut self, cases: &Vec<MatchCase>) {
     println!("{{");
-  
+
     self.indent_level += 1;
     cases.iter().for_each(|case| {
       self.print_indent();
@@ -338,7 +341,7 @@ impl State {
       println!();
     });
     self.indent_level -= 1;
-  
+
     self.print_indent();
     print!("}}");
   }
