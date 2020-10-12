@@ -11,6 +11,7 @@ type Offset = usize;
 
 #[repr(C)]
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[allow(dead_code)]
 enum OpReg {
   /// general purpose register, from r0 to r31
   R(u8),
@@ -24,6 +25,7 @@ enum OpReg {
 
 #[repr(C)]
 #[derive(Debug, Clone, Copy, PartialEq)]
+#[allow(dead_code)]
 enum OpValue {
   Reg(OpReg),
   Imm(i64),
@@ -32,6 +34,7 @@ enum OpValue {
 
 #[repr(C)]
 #[derive(Debug, Clone, Copy, PartialEq)]
+#[allow(dead_code)]
 enum Opcode {
   Nop,
   Mov(OpReg, OpValue),
