@@ -11,7 +11,7 @@ use crate::{
 lalrpop_mod!(pub grammar);
 pub use grammar::*;
 
-pub struct MahiroParser {}
+pub struct MahiroParser;
 
 #[derive(Debug, Clone)]
 pub struct MahiroParseError {
