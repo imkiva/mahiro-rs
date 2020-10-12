@@ -51,9 +51,12 @@ impl State {
     }
   }
   
-  pub fn print_fn(&mut self, f: &FnDecl) {}
-  pub fn print_struct(&mut self, f: &StructDecl) {}
-  pub fn print_enum(&mut self, f: &EnumDecl) {}
-  pub fn print_impl(&mut self, f: &ImplDecl) {}
-  pub fn print_trait(&mut self, f: &TraitDecl) {}
+  pub fn print_fn(&mut self, f: &FnDecl) {
+  
+  }
+  
+  pub fn print_struct(&mut self, s: &StructDecl) {}
+  pub fn print_enum(&mut self, e: &EnumDecl) {}
+  pub fn print_impl(&mut self, i: &ImplDecl) {}
+  pub fn print_trait(&mut self, t: &TraitDecl) {}
 }
