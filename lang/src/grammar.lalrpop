@@ -137,7 +137,7 @@ MatchPattern: MatchPattern = {
 
 MatchAction: Vec<Stmt> = {
     <Body> => <>,
-    <Expr> "," => vec![Stmt::Expr(<>)],
+    <Expr> "," => vec![Stmt::ResultExpr(<>)],
 }
 
 QuestionExpr: Expr = {
@@ -148,14 +148,14 @@ QuestionExpr: Expr = {
                     name: "Ok".to_string(),
                     fields: vec!["v".to_string()],
                 }),
-                action: vec![Stmt::Expr(Expr::Id("v".to_string()))],
+                action: vec![Stmt::ResultExpr(Expr::Id("v".to_string()))],
             },
             MatchCase {
                 pat: MatchPattern::Enum(EnumVariant {
                     name: "Err".to_string(),
                     fields: vec!["err".to_string()],
                 }),
-                action: vec![Stmt::Return(Some(Expr::Id("err".to_string())))],
+                action: vec![Stmt::ResultExpr(Expr::Id("err".to_string()))],
             },
         ]),
         None => e,

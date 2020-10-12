@@ -1,4 +1,4 @@
-use std::fmt::{Display};
+use std::fmt::Display;
 
 pub type Ident = String;
 
@@ -96,6 +96,7 @@ pub enum Stmt {
   Let(LetPattern, Expr),
   Assign(AssignOp, Ident, Expr),
   Expr(Expr),
+  ResultExpr(Expr),
   Break(Option<Expr>),
   Continue,
 }
@@ -248,7 +249,8 @@ impl Display for Type {
         f,
         "{}<{}>",
         ctor.as_ref(),
-        param.iter()
+        param
+          .iter()
           .map(|t| format!("{}", t))
           .collect::<Vec<_>>()
           .join(", ")
@@ -262,6 +264,49 @@ impl Display for Type {
           .collect::<Vec<_>>()
           .join(", ")
       ),
+    }
+  }
+}
+
+impl Display for BinaryOp {
+  fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    match self {
+      BinaryOp::LogicalOr => write!(f, "||"),
+      BinaryOp::LogicalAnd => write!(f, "&&"),
+      BinaryOp::Gt => write!(f, ">"),
+      BinaryOp::Lt => write!(f, "<"),
+      BinaryOp::Ge => write!(f, ">="),
+      BinaryOp::Le => write!(f, "<="),
+      BinaryOp::Eq => write!(f, "=="),
+      BinaryOp::Ne => write!(f, "!="),
+      BinaryOp::Add => write!(f, "+"),
+      BinaryOp::Sub => write!(f, "-"),
+      BinaryOp::Mul => write!(f, "*"),
+      BinaryOp::Div => write!(f, "/"),
+      BinaryOp::Mod => write!(f, "%"),
+    }
+  }
+}
+
+impl Display for UnaryOp {
+  fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    match self {
+      UnaryOp::Not => write!(f, "!"),
+      UnaryOp::Positive => write!(f, "+"),
+      UnaryOp::Negative => write!(f, "-"),
+    }
+  }
+}
+
+impl Display for AssignOp {
+  fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    match self {
+      AssignOp::Assign => write!(f, "="),
+      AssignOp::AddAssign => write!(f, "+="),
+      AssignOp::SubAssign => write!(f, "-="),
+      AssignOp::MulAssign => write!(f, "*="),
+      AssignOp::DivAssign => write!(f, "/="),
+      AssignOp::ModAssign => write!(f, "%="),
     }
   }
 }

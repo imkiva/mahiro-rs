@@ -1,5 +1,4 @@
-use mahiro_lang::{CompileResult, Compiler};
-use mahiro_lang::syntax::pp::PrettyPrinter;
+use mahiro_lang::{syntax::pp::PrettyPrinter, CompileResult, Compiler};
 
 fn main() -> CompileResult<()> {
   let m = Compiler::compile(
@@ -19,11 +18,11 @@ fn main() -> CompileResult<()> {
     "#,
   )?;
   println!("{:#?}", m);
-  
+
   println!("Pretty Print");
   println!("============");
   let pp = PrettyPrinter::new(2);
   pp.print_module(&m);
-  
+
   Ok(())
 }
