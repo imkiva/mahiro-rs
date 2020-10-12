@@ -234,7 +234,7 @@ PrimaryPostfix: Postfix = {
 }
 
 Stmt: Stmt = {
-    <ComplexExpr> => Stmt::Expr(<>),
+    <ComplexExpr> ";"? => Stmt::Expr(<>),
     <SimpleExpr> ";" => Stmt::Expr(<>),
     <id: VarIdent> <op: AssignOp> <e: Expr> ";" => Stmt::Assign(op, id, e),
     "let" <p: LetPattern> "=" <e: Expr> ";" => Stmt::Let(p, e),
