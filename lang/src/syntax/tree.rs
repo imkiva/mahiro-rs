@@ -1,3 +1,5 @@
+use std::fmt::{Display, Formatter};
+
 pub type Ident = String;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -17,6 +19,7 @@ pub enum Type {
   Bool,
   String,
   SelfType,
+  //Generic(Box<Type>, Vec<Type>),
   User(Ident),
   Tuple(Vec<Type>),
 }
@@ -219,6 +222,37 @@ impl Type {
       "String" => Type::String,
       "Self" => Type::SelfType,
       _ => Type::User(s.to_string()),
+    }
+  }
+}
+
+impl Display for Type {
+  fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    match self {
+      Type::Unit => write!(f, "Unit"),
+      Type::Int8 => write!(f, "Int8"),
+      Type::Int16 => write!(f, "Int16"),
+      Type::Int32 => write!(f, "Int32"),
+      Type::Int64 => write!(f, "Int64"),
+      Type::UInt8 => write!(f, "UInt8"),
+      Type::UInt16 => write!(f, "UInt16"),
+      Type::UInt32 => write!(f, "UInt32"),
+      Type::UInt64 => write!(f, "UInt64"),
+      Type::Float32 => write!(f, "Float32"),
+      Type::Float64 => write!(f, "Float64"),
+      Type::Char => write!(f, "Char"),
+      Type::Bool => write!(f, "Bool"),
+      Type::String => write!(f, "String"),
+      Type::SelfType => write!(f, "Self"),
+      Type::User(ty) => write!(f, "{}", ty),
+      Type::Tuple(t) => write!(
+        f,
+        "({})",
+        t.iter()
+          .map(|t| format!("{}", t))
+          .collect::<Vec<_>>()
+          .join(", ")
+      ),
     }
   }
 }
