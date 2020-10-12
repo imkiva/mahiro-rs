@@ -104,12 +104,40 @@ Constraint: GenericParam = {
 }
 
 Expr: Expr = {
-    "if" <cond: Expr> <t: Body> <el: ("else" Body)?> => Expr::If(Box::new(cond), t, el.map(|e| e.1)),
-    "while" <cond: Expr> <b: Body> => Expr::While(Box::new(cond), b),
-    "loop" <Body> => Expr::While(Box::new(Expr::Lit(Lit::LitBool(true))), <>),
-    "for" <id: VarIdent> "in" <e: Expr> <b: Body> => Expr::For(id, Box::new(e), b),
-    "match" <e: Expr> "{" <c: MatchCase*> "}" => Expr::Match(Box::new(e), c),
+    <ComplexExpr> => <>,
+    <SimpleExpr> => <>,
+}
+
+SimpleExpr: Expr = {
     <QuestionExpr> => <>
+}
+
+ComplexExpr: Expr = {
+    <IfExpr> => <>,
+    <WhileExpr> => <>,
+    <LoopExpr> => <>,
+    <ForExpr> => <>,
+    <MatchExpr> => <>,
+}
+
+IfExpr: Expr = {
+    "if" <cond: Expr> <t: Body> <el: ("else" Body)?> => Expr::If(Box::new(cond), t, el.map(|e| e.1)),
+}
+
+WhileExpr: Expr = {
+    "while" <cond: Expr> <b: Body> => Expr::While(Box::new(cond), b),
+}
+
+LoopExpr: Expr = {
+    "loop" <Body> => Expr::While(Box::new(Expr::Lit(Lit::LitBool(true))), <>),
+}
+
+ForExpr: Expr = {
+    "for" <id: VarIdent> "in" <e: Expr> <b: Body> => Expr::For(id, Box::new(e), b),
+}
+
+MatchExpr: Expr = {
+    "match" <e: Expr> "{" <c: MatchCase*> "}" => Expr::Match(Box::new(e), c),
 }
 
 MatchCase: MatchCase = {
@@ -226,7 +254,8 @@ PrimaryPostfix: Postfix = {
 }
 
 Stmt: Stmt = {
-    <Expr> ";" => Stmt::Expr(<>),
+    <ComplexExpr> => Stmt::Expr(<>),
+    <SimpleExpr> ";" => Stmt::Expr(<>),
     <id: VarIdent> <op: AssignOp> <e: Expr> ";" => Stmt::Assign(op, id, e),
     "let" <p: LetPattern> "=" <e: Expr> ";" => Stmt::Let(p, e),
     "return" <e: Expr?> ";" => Stmt::Return(e),

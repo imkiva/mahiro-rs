@@ -18,15 +18,15 @@ fn main() -> CompileResult<()> {
             fuck;
         } else {
             shit;
-        };
+        }
         while true {
             fuck;
             shit;
-        };
+        }
         for i in shit {
             i.drop();
             i.take();
-        };
+        }
         match nice() {
             Some(a) => fuck,
             Some(_) => shit,
@@ -35,7 +35,7 @@ fn main() -> CompileResult<()> {
             _ => {
                 return "hello world";
             }
-        };
+        }
         let Some(t) = a;
         let Some(_) = a;
     }
