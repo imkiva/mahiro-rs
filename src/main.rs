@@ -15,26 +15,26 @@ fn main() -> CompileResult<()> {
     fn main() {
         println("hello");
         if a {
-          fuck;
+            fuck;
         } else {
-          shit;
+            shit;
         };
         while true {
-          fuck;
-          shit;
+            fuck;
+            shit;
         };
         for i in shit {
-          i.drop();
-          i.take();
+            i.drop();
+            i.take();
         };
         match nice() {
-          Some(a) => fuck,
-          Some(_) => shit,
-          Some((_, _, a, _, _)) => shit,
-          None => apple,
-          _ => {
-            return "hello world";
-          }
+            Some(a) => fuck,
+            Some(_) => shit,
+            Some((_, _, a, _, _)) => shit,
+            None => apple,
+            _ => {
+                return "hello world";
+            }
         };
         let Some(t) = a;
         let Some(_) = a;
