@@ -40,11 +40,12 @@ FnDecl: FnDecl = {
 }
 
 FnSig: FnSig = {
-    "fn" <g: Generic?> <id: VarIdent> "(" <param: TypedParam> ")" <ret: ("->" TypeIdent)?> => FnSig {
+    <a: "async"?> "fn" <g: Generic?> <id: VarIdent> "(" <param: TypedParam> ")" <ret: ("->" TypeIdent)?> => FnSig {
         generic: g.unwrap_or_else(|| vec![]),
         name: id,
         param: param,
         ret: ret.map(|e| e.1).unwrap_or_else(|| Type::Unit),
+        async_fn: a.is_some(),
     }
 }
 

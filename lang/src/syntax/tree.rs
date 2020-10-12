@@ -33,6 +33,7 @@ pub struct FnSig {
   pub name: Ident,
   pub param: Vec<Param>,
   pub ret: Type,
+  pub async_fn: bool,
 }
 
 #[derive(Debug, Clone)]

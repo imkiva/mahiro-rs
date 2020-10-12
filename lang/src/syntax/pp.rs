@@ -42,7 +42,7 @@ impl State {
   
   pub fn print_decl(&mut self, d: &Decl) {
     match d {
-      Decl::Import(m, name) => println!("import {} as {}", m.iter().join("."), name, ),
+      Decl::Import(m, name) => println!("import {} as {}", m.join("."), name, ),
       Decl::Fn(decl) => self.print_fn(decl),
       Decl::Struct(decl) => self.print_struct(decl),
       Decl::Enum(decl) => self.print_enum(decl),
