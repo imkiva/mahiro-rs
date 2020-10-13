@@ -45,8 +45,9 @@ fn main() -> CompileResult<()> {
   
   match m {
     Ok(m) => {
+      println!("AST");
+      println!("============");
       println!("{:#?}", m);
-  
       println!("Pretty Print");
       println!("============");
       let pp = PrettyPrinter::new(2);
