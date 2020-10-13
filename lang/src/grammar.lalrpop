@@ -169,7 +169,7 @@ QuestionExpr: Expr = {
                         ty: None,
                     })],
                 }),
-                action: vec![Stmt::ResultExpr(Expr::Id("err".to_string()))],
+                action: vec![Stmt::Return(Some(Expr::Id("err".to_string())))],
             },
         ]),
         None => e,

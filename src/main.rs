@@ -38,6 +38,7 @@ fn main() -> CompileResult<()> {
         }
         let Some(t) = a;
         let Some(_) = a;
+        let a = compile(it)?;
     }
     "#,
   )?;
