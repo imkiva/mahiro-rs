@@ -1,3 +1,7 @@
+mod error;
+mod position;
+mod span;
+
 use std::fmt::{Display, Formatter};
 
 use crate::{
@@ -13,10 +17,11 @@ impl CompileError {
   }
 
   fn format_parse_error(&self, e: &MahiroParseError, input: &str, path: &str) -> String {
-    type Error = pest::error::Error<()>;
-    type ErrorVariant = pest::error::ErrorVariant<()>;
-    let start = pest::Position::new(input, e.start).unwrap();
-    let end = pest::Position::new(input, e.end).unwrap();
+    type Error = error::Error;
+    type ErrorVariant = error::ErrorVariant;
+
+    let start = position::Position::new(input, e.start).unwrap();
+    let end = position::Position::new(input, e.end).unwrap();
     let error = Error::new_from_span(
       ErrorVariant::CustomError {
         message: format!("{}", e.kind),
