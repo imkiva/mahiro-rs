@@ -1,7 +1,9 @@
 use std::fmt::{Display, Formatter};
 
-use crate::{CompileError, syntax::parser::MahiroParseError};
-use crate::syntax::parser::MahiroParseErrorKind;
+use crate::{
+  syntax::parser::{MahiroParseError, MahiroParseErrorKind},
+  CompileError,
+};
 
 impl CompileError {
   pub fn error_message(&self, input: &str, path: &str) -> String {
@@ -9,7 +11,7 @@ impl CompileError {
       CompileError::ParseError(e) => self.format_parse_error(e, input, path),
     }
   }
-  
+
   fn format_parse_error(&self, e: &MahiroParseError, input: &str, path: &str) -> String {
     type Error = pest::error::Error<()>;
     type ErrorVariant = pest::error::ErrorVariant<()>;

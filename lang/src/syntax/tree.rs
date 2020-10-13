@@ -233,6 +233,13 @@ impl Type {
 
 impl Display for Type {
   fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    fn comma_sep(v: &Vec<Type>) -> String {
+      v.iter()
+        .map(|t| format!("{}", t))
+        .collect::<Vec<_>>()
+        .join(", ")
+    }
+
     match self {
       Type::Unit => write!(f, "Unit"),
       Type::Int8 => write!(f, "Int8"),
@@ -249,25 +256,9 @@ impl Display for Type {
       Type::Bool => write!(f, "Bool"),
       Type::String => write!(f, "String"),
       Type::SelfType => write!(f, "Self"),
-      Type::Generic(ctor, param) => write!(
-        f,
-        "{}<{}>",
-        ctor.as_ref(),
-        param
-          .iter()
-          .map(|t| format!("{}", t))
-          .collect::<Vec<_>>()
-          .join(", ")
-      ),
+      Type::Generic(ctor, param) => write!(f, "{}<{}>", ctor.as_ref(), comma_sep(param),),
       Type::User(ty) => write!(f, "{}", ty),
-      Type::Tuple(t) => write!(
-        f,
-        "({})",
-        t.iter()
-          .map(|t| format!("{}", t))
-          .collect::<Vec<_>>()
-          .join(", ")
-      ),
+      Type::Tuple(t) => write!(f, "({})", comma_sep(t),),
     }
   }
 }

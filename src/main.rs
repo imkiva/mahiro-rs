@@ -40,9 +40,9 @@ fn main() -> CompileResult<()> {
         let a = compile(it)?;
     }
     "#;
-  
+
   let m = Compiler::compile(input);
-  
+
   match m {
     Ok(m) => {
       println!("AST");
@@ -52,12 +52,12 @@ fn main() -> CompileResult<()> {
       println!("============");
       let pp = PrettyPrinter::new(2);
       pp.print_module(&m);
-    },
-    
+    }
+
     Err(e) => {
       println!("{}", e.error_message(input, "<stdin>"));
     }
   }
-  
+
   Ok(())
 }
