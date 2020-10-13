@@ -1,8 +1,7 @@
 use mahiro_lang::{syntax::pp::PrettyPrinter, CompileResult, Compiler};
 
 fn main() -> CompileResult<()> {
-  let m = Compiler::compile(
-    r#"
+  let input = r#"
     module Main where
     enum Option<T> {
         Some(T),
@@ -36,18 +35,28 @@ fn main() -> CompileResult<()> {
                 return "hello world";
             }
         }
-        let Some(t) = a;
+        let Some(_) = a;
         let Some(_) = a;
         let a = compile(it)?;
     }
-    "#,
-  )?;
-  println!("{:#?}", m);
-
-  println!("Pretty Print");
-  println!("============");
-  let pp = PrettyPrinter::new(2);
-  pp.print_module(&m);
-
+    "#;
+  
+  let m = Compiler::compile(input);
+  
+  match m {
+    Ok(m) => {
+      println!("{:#?}", m);
+  
+      println!("Pretty Print");
+      println!("============");
+      let pp = PrettyPrinter::new(2);
+      pp.print_module(&m);
+    },
+    
+    Err(e) => {
+      println!("{}", e.error_message(input, "<stdin>"));
+    }
+  }
+  
   Ok(())
 }
