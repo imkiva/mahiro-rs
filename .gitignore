@@ -36,4 +36,4 @@
 .idea/
 cmake-*
 
-/compiler/target/
+/build_system/target/

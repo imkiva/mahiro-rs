@@ -1,5 +1,5 @@
 [package]
-name = "compiler"
+name = "build_system"
 version = "0.1.0"
 authors = ["imkiva <imkiva@islovely.icu>"]
 edition = "2018"
@@ -10,4 +10,4 @@ edition = "2018"
 
 [lib]
 crate-type = ["staticlib", "rlib"]
-name = "mahiro_compiler"
+name = "mahiro_build_system"
