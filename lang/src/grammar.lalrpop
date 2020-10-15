@@ -223,7 +223,7 @@ PrimaryPrefix: Expr = {
 }
 
 LambdaBody: Vec<Stmt> = {
-    "(" <Expr> ")" => vec![Stmt::Return(Some(<>))],
+    <Expr> "|" => vec![Stmt::Return(Some(<>))],
     <Body> => <>,
 }
 
