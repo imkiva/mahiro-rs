@@ -1,4 +1,2 @@
 pub struct BuildSystem;
-impl BuildSystem {
-  
-}
+impl BuildSystem {}

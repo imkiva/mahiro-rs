@@ -33,9 +33,12 @@ Decl: Decl = {
 }
 
 FnDecl: FnDecl = {
-    <sig: FnSig> <body: FnBody> => FnDecl {
-        sig: sig,
-        body: body,
+    <sig: FnSig> <body: FnBody> => match sig.async_fn {
+        false => FnDecl { sig: sig, body: body },
+        true => {
+            let new_body = state.desugar_async_fn(&sig, body);
+            FnDecl { sig: sig, body: new_body }
+        },
     },
 }
 

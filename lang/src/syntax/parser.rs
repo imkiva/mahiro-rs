@@ -32,7 +32,13 @@ impl MahiroParser {
   pub fn parse_module(src: &str) -> CompileResult<Module> {
     let mut state = State::new();
     match ModuleParser::new().parse(&mut state, src) {
-      Ok(module) => Ok(module),
+      Ok(module) => {
+        let mut module: Module = module;
+        let mut decl = state.extra_decl();
+        decl.extend(module.decl.into_iter());
+        module.decl = decl;
+        Ok(module)
+      }
       Err(e) => {
         let e: PE<usize, Token, UserError> = e;
         match e {
@@ -76,13 +82,18 @@ impl MahiroParser {
 }
 
 mod utils {
-  use crate::syntax::{
-    parser::MahiroParseErrorKind,
-    tree::{Expr, Ident},
+  use crate::{
+    sugar::async_fn::DesugarAsync,
+    syntax::{
+      parser::MahiroParseErrorKind,
+      tree::{Decl, Expr, FnSig, Ident, Stmt},
+    },
   };
 
   #[derive(Debug, Clone)]
-  pub struct State {}
+  pub struct State {
+    extra_decl: Vec<Decl>,
+  }
 
   #[derive(Debug, Clone)]
   pub struct UserError {
@@ -99,7 +110,17 @@ mod utils {
 
   impl State {
     pub fn new() -> Self {
-      State {}
+      State { extra_decl: vec![] }
+    }
+
+    pub fn extra_decl(self) -> Vec<Decl> {
+      self.extra_decl
+    }
+
+    pub fn desugar_async_fn(&mut self, sig: &FnSig, body: Vec<Stmt>) -> Vec<Stmt> {
+      let (new_body, decl) = DesugarAsync::desugar_async(sig, body);
+      self.extra_decl.extend(decl.into_iter());
+      new_body
     }
   }
 }

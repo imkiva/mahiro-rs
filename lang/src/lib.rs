@@ -7,6 +7,7 @@ use crate::syntax::{
 };
 
 pub mod error;
+pub mod sugar;
 pub mod syntax;
 
 pub struct Compiler;
