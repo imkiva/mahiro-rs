@@ -139,9 +139,9 @@ MatchPattern: MatchPattern = {
     },
     <MatchPatEnumVariant> => MatchPattern::Enum(<>),
     <l: IntLit> => MatchPattern::Lit(Lit::LitInt(l)),
-    <l: FloatLit> <a: MatchAction> => MatchPattern::Lit(Lit::LitFloat(l)),
-    <l: StringLit> <a: MatchAction> => MatchPattern::Lit(Lit::LitString(l)),
-    <l: CharLit> <a: MatchAction> => MatchPattern::Lit(Lit::LitChar(l)),
+    <l: FloatLit> => MatchPattern::Lit(Lit::LitFloat(l)),
+    <l: StringLit> => MatchPattern::Lit(Lit::LitString(l)),
+    <l: CharLit> => MatchPattern::Lit(Lit::LitChar(l)),
     "true" => MatchPattern::Lit(Lit::LitBool(true)),
     "false" => MatchPattern::Lit(Lit::LitBool(false)),
 }
