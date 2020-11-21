@@ -106,6 +106,7 @@ mod utils {
     Apply(Vec<Expr>),
     Member(Ident),
     Index(Expr),
+    Await,
   }
 
   impl State {
