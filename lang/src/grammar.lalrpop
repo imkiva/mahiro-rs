@@ -383,7 +383,7 @@ QualifiedModuleName: Vec<Ident> = Delim<TypeIdentString, ".">;
 Comma<E>: Vec<E> = Delim<E, ",">;
 
 #[inline]
-Delim<E,D>: Vec<E> = {
+Delim<E, D>: Vec<E> = {
     <v:(<E> D)*> <e:E?> => match e { // (2)
          None => v,
          Some(e) => {
