@@ -314,6 +314,10 @@ impl State {
         self.print_expr(i.as_ref());
         print!("]");
       }
+      Expr::TupleIndex(e, i) => {
+        self.print_expr(e.as_ref());
+        print!(".{}", i);
+      }
     }
   }
 

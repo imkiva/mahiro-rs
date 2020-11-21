@@ -199,6 +199,7 @@ PrimaryExpr: Expr = {
         },
         Postfix::Member(id) => Expr::Member(Box::new(l), id),
         Postfix::Index(i) => Expr::Index(Box::new(l), Box::new(i)),
+        Postfix::TupleIndex(i) => Expr::TupleIndex(Box::new(l), i),
         Postfix::Await => unimplemented!("async/await is not supported yet"),
     }),
 }
@@ -234,6 +235,7 @@ LambdaBody: Vec<Stmt> = {
 PrimaryPostfix: Postfix = {
     "(" <Args> ")" => Postfix::Apply(<>),
     ".await"       => Postfix::Await,
+    "." <IntLit>   => Postfix::TupleIndex(<> as usize),
     "." <VarIdent> => Postfix::Member(<>),
     "[" <Expr> "]" => Postfix::Index(<>),
 }

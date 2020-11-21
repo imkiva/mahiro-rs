@@ -206,6 +206,7 @@ pub enum Expr {
   MemberApply(Box<Expr>, Ident, Vec<Expr>),
   Member(Box<Expr>, Ident),
   Index(Box<Expr>, Box<Expr>),
+  TupleIndex(Box<Expr>, usize),
 }
 
 impl Type {
